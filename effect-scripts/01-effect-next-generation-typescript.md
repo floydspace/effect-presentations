@@ -1,32 +1,31 @@
 
 <style>
-.reveal code.rust {
-  font-size: 1.5em;
-  line-height: 1.5em;
-}
-.reveal code.python {
+.reveal code.ts {
   font-size: 1.5em;
   line-height: 1.5em;
 }
 </style>
 
-![[rust-logo.png]]
-## Your code
-## can be perfect
+![[effect-logo.png]]
+# Effect
+### Next-Generation Typescript
 
 notes:
-Hi friends my name is Tris and this is No Boilerplate, focusing on fast, technical videos.
-This is my re-upload of this video, with many fixes and corrections.
+Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create complex, synchronous, and asynchronous programs.
 
-As developers we build critical infrastructure,
-it's time to build it in a language designed to build critical infrastructure.
+As web developers we are stuck with javascript (and all of its quirks) whether we like it or not, 
+typescript has been a big step, but the privatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
 
 ---
 
 How often have you seen this kind of code?
 
-```python
-int(item["ViewCount"]["N"])
+```typescript
+async function getData(): Data {
+	const response = await fetch("https://api.example.com/foo");
+	const json = await response.json();
+	return dataSchema.parse(json);
+}
 ```
 
 What problems are there here?
@@ -34,67 +33,99 @@ What problems are there here?
 notes:
 How often have you seen this kind of code?
 What problems might there be here?
-The biggest problem is that this line will page you at 4am.
+The biggest problem is that this function could crash your program, but doesn't feel the need to tell you
 
 ---
 
-```python
-int(item["ViewCount"]["N"])
+```ts
+async function getData(): Data {
+	const response = await fetch("...");
+	const json = await response.json();
+	return dataSchema.parse(json);
+}
 ```
 
-1.  The `item` is a `hashmap`,
-2.  There is a `ViewCount` attribute,
-3.  The `ViewCount` attribute is a `hashmap`,
-4.  There is an `N` attribute in the `ViewCount` hashmap, and
-5.  The value can be parsed as an integer with `int()`.
+1.  `fetch` can throw
+2.  `json` can throw
+3.  `parse` can throw
+4.  each of these is a different kind of error that may be handled differently
 
 notes:
 Unsafe assumptions crash our programs at runtime and wake us up at 4am.
 
 ---
 
-
-```rust
-i32::from_str_radix(
-    item["ViewCount"].unwrap()
-        .get("N").unwrap(),
-    10
-).unwrap()
+```ts
+let data: Data;
+try {
+	data = getData();
+} 
+catch (exception: unknown) {
+	switch(exception) { /* ... */ }
+ }
 ```
 
-Note the `unrwap()s`.
+notes:
+handling these cases properly in vanilla typescript is less than ideal. what if you forget to try/catch? what if you forget one of the possible errors?
+
+---
+
+
+```ts
+function getData(): Effect.Effect<never, never, Data> {
+  return pipe(
+    Effect.tryPromise(() => fetch("https://api.example.com/foo")),
+    Effect.orDie,
+    Effect.flatMap((res) => Effect.tryPromise(() => res.json())),
+    Effect.orDie,
+    Effect.map((json) => Effect.try(() => dataSchema.parse(json))),
+    Effect.orDie
+  );
+}
+```
+
+Note the `orDie()s`.
 
 notes:
-This is exactly as unsafe as the Python solution, but the three places it can crash are now explicitly stated.
-If you want it to never crash, you find alternatives for those .unwrap()s
+This is exactly as unsafe as the original function, but the three places it can crash are now explicitly stated.
+If you want it to never crash, you find alternatives for those .orDie()s
 
 Here's a verbose version of what that might look like
 
 ---
 
-A verbose rust solution
+A verbose Effect solution
 
-```
-if let Some(view_count_attr) = item.get("ViewCount") {
-    match view_count_attr.get("N") {
-        Ok(view_count) => {
-            match i32::from_str_radix(view_count, 10) {
-                Ok(n) => n,
-                Err(_) => {
-                    // We couldn't parse the string as an i32
-                }
-            }
-        }
-        Err(_) => {} // The 'ViewCount' was not an 'N'
-    }
-} else {}// There is no 'ViewCount' attribute
-
+```ts
+function getData(): Effect.Effect<
+  never,
+  FetchError | JSONError | ParseError,
+  Data
+> {
+  return pipe(
+    Effect.tryCatchPromise(
+      () => fetch("https://api.example.com/foo"),
+      () => new FetchError()
+    ),
+    Effect.flatMap((res) =>
+      Effect.tryCatchPromise(
+        () => res.json(),
+        () => new JSONError()
+      )
+    ),
+    Effect.flatMap((json) =>
+      Effect.tryCatch(
+        () => dataSchema.parse(json),
+        () => new ParseError()
+      )
+    )
+  );
+}
 ```
 
 notes:
 Here is a verbose version of what that might look like.
-Rust will not let you write unsafe code from the start.
-You must handle all errors.
+Effect ...
 
 ---
 
