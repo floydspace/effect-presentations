@@ -20,10 +20,10 @@ code.language-typescript {
 ### Next-Generation Typescript
 
 notes:
-Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create the complex programs of today.
+Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create the complex applications of today and tomorrow.
 
 We are stuck with javascript (and all of its quirks) whether we like it or not,
-typescript has been a big step, but the primatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
+typescript has been a really big step, but the primatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
 
 ---
 
@@ -81,7 +81,8 @@ let data: Data;
 try {
   data = getData();
 } catch (exception: unknown) {
-  switch (exception /* ... */) {
+  switch (exception) {
+	  /* ... */
   }
 }
 ``` -->
@@ -90,7 +91,8 @@ try {
 try {
   data = getData();
 } catch (exception: unknown) {
-  switch (exception /* ... */) {
+  switch (exception) {
+	  /* ... */
   }
 }</code></pre>
 
@@ -272,7 +274,7 @@ Could this promise reject? If so, what type is returned?
 notes:
 What's the problem with these two types? ...theyre only generic over one parameter
 
-Typescript gives us the illusion of safety, but once things go off the happy path your left in the dark.
+Typescript gives us the illusion of safety, but once things go off the happy path your left completely in the dark.
 
 I am here to tell you that it doesn't have to be that way.
 
@@ -293,19 +295,49 @@ type Effect<Requirements, Error, Value> = (
 notes:
 The Effect type is the core of the entire Effect ecosystem.
 
-It encapsulates the logic of a program. This program requires some Requirements to execute, and when run can either fail, producing an error of type `Error`, or succeed, yielding a value of type `Value`.
-
 Although their actual implementation is more a bit complex than this, it can be helpful to think of `Effect` as a function that takes in its requirements as arguments and returns either a value or an error
 
 ---
 
-`Promises` kind of suck...
+Promises kind of suck...
 
 notes:
+Now back to javascript for a moment, 
+
 Asynchronous code is everywhere in modern apps, but the `Promise` primitive leaves a lot to be desired
 
+---
+
+<!-- ```ts
+const promiseWithImplicitMemoization = new Promise((resolve) => {
+  console.log("Implicit memoization...");
+  return resolve(1);
+});
+promiseWithImplicitMemoization.then(() => {
+  console.log("First subscription");
+  promiseWithImplicitMemoization.then(() => {
+    console.log("Second subscription");
+  });
+});
+``` -->
+<pre>
+<code class="language-typescript">const promiseWithImplicitMemoization = new Promise((resolve) =&gt; {
+  console.log("Implicit memoization...");
+  return resolve(1);
+});
+promiseWithImplicitMemoization.then(() =&gt; {
+  console.log("First subscription");
+  promiseWithImplicitMemoization.then(() =&gt; {
+    console.log("Second subscription");
+  });
+});</code></pre>
+
+Can you guess what will be printed?
+
+
+notes:
 - Promises are Eagerly executed, meaning they begin execution immediately on creation. This means they can never be used to represent a computation, only an already running computation that might have already completed and produced a value.
-- Also, the value produced by the Promise is implicitly memoized, meaning that when the Promise is settled, the internal state of the Promise is frozen and can't be changed anymore, whether the Promise is fulfilled or rejected. Consequently if you want to run the same computation again, you'll need to recreate the entire Promise from scratch.
+- Also, the value produced by a Promise is implicitly memoized, meaning that when the Promise is settled, the internal state of the Promise is frozen and can't be changed anymore, whether the Promise is fulfilled or rejected. Consequently if you want to run the same computation again, you'll need to recreate the entire Promise from scratch.
 
 ---
 
@@ -317,7 +349,7 @@ const program = Effect.sync(() => {
   console.log("Hello, World!");
   return 1;
 });
-Effect.runSync(program); // 1
+const output =  Effect.runSync(program); // console: "Hello, World!", output === 1
 ``` -->
 <pre>
 <code class="language-typescript">// Effect&lt;never, never, number&gt;
@@ -325,9 +357,13 @@ const program = Effect.sync(() =&gt; {
   console.log("Hello, World!");
   return 1;
 });
-Effect.runSync(program); // 1</code></pre>
+// console: &lt;blank&gt;
+const output = Effect.runSync(program); 
+// console: "Hello, World!", output === 1</code></pre>
 
 notes:
+Effects arent like this
+
 The `Effect` data type represents an **immutable** value that **lazily** describes a workflow or job, and all Effect functions produce new `Effect` values.
 
 `Effect` values do not actually do anything, they are just values that model or describe effectful interactions.
@@ -339,7 +375,7 @@ An `Effect` can be interpreted by the Effect Runtime System into effectful int
 ## `Effect` enables incredible things
 
 notes:
-If your like me, your mind is probably racing with possibilities this point. I am now going to give you a intentionally very quick tour of some of the things that the Effect ecosystem offers. Although your more than welcome to pause on each slide to try and understand what's going on, don't get too caught up in the specifics, I'll go into more depth in future videos. Just get an idea of what's possible.
+If your like me, your mind is probably racing with possibilities this point. I am now going to give you a intentionally very quick tour of some of the things that the Effect ecosystem offers. Although your more than welcome to pause on each slide to try and understand what's going on, don't get too caught up in the specifics, I'll go into more depth in future videos. Just try to get an idea of what's possible.
 
 ---
 
@@ -412,9 +448,15 @@ function getUserFromDB(userId: number) {
     Effect.map((db) => db.user.getById(userId))
   );
 }
+
+// returns Effect.Effect<never, never, User>
+const runnable = pipe(
+	getUserFromDB,
+	Effect.provideService(DBClient, actualDatabase)
+)
 ``` -->
 <pre>
-<code class="language-typescript">type DBClient = {
+<code style="line-height: 1em; font-size: .9em;" class="language-typescript">type DBClient = {
   user: { getById(userId: number): User };
 };
 const DBClient = Context.Tag&lt;DBClient&gt;();
@@ -425,11 +467,16 @@ function getUserFromDB(userId: number) {
     DBClient,
     Effect.map((db) =&gt; db.user.getById(userId))
   );
-}</code></pre>
+}
+// Effect.Effect&lt;never, never, User&gt;
+const runnable = pipe(
+	getUserFromDB(1),
+	Effect.provideService(DBClient, liveOrLocalDB)
+)</code></pre>
 
 notes:
 
-A `Tag` in effect is a placeholder for a dependency of some type. We can use the Tag just as if it was the actual implemented object in our Effects without ever actually implementing it. Doing so causes that type to appear in the `Requirements` field of the resulting effect.
+In effect, a `Tag` is a placeholder for a dependency of some type. We can use the Tag just as if it was the actual implemented object in our Effects without ever actually implementing it. Doing so causes that type to appear in the `Requirements` field of the resulting effect.
 
 This tells the effect runtime that you must provide a implementation that matches the defined type before the program can be run. This can be done flexibly anywhere in your program, meaning it becomes simple to swap out the implementation of a dependency when required.
 
@@ -555,7 +602,7 @@ or we could use effect
 
 ---
 
-Controlled Concurrency
+## Controlled Concurrency
 
 <!-- ```tsx
 const users = pipe(
@@ -614,6 +661,7 @@ Working with Fibers directly is an advanced usecase you probably wont need for a
 
 ### The Ecosystem is Massive
 
+- ...Everything already mentioned
 - Configuration
 - Metrics
 - Schema Validation
@@ -623,20 +671,24 @@ Working with Fibers directly is an advanced usecase you probably wont need for a
 - ... SO MUCH MORE
 
 notes:
-It feels like the Effect authors have thought of nearly everything under the sun. The Effect ecosystem is massive and provides tools to handle nearly every facit of modern application development.
+Application code in TypeScript often solves the same problems over and over again.  Effect provides a rich ecosystem of libraries that provide standardized solutions to many of these problems. You can use these libraries to build your application, or you can use them to build your own libraries.
+
+However, effect understands its not always realistic to rewrite your entire application...
 
 ---
 
-### Effect is fully interoperable with existing code.
+### Effect is fully interoperable with existing code
 
 notes:
-By now you might have thought back to other projects aimed at 'doing typescript better', the majority of which ultimately fell to the same fate, a lack of easy interop with the vast and unavoidable existing javascript ecosystem
+By now you might have thought back to other projects aimed at 'doing typescript better', or even other programming languages, the majority of which ultimately fall to the same fate, a lack of easy interop with the vast and unavoidable existing javascript ecosystem
 
-Not Effect. While it would be awesome to write applications that are 'Effect all the way down', you are by no means forced to.
+Not Effect. While it would be awesome to write applications that are 'Effect all the way down', you can just start with the pieces of the ecosystem that make the most sense for the problems you are solving.
 
 Do you just want to rewrite a single endpoint that does some complicated parallel async work, or has some particularly nasty error handling? You can do it with Effect today.
 
 Do you just want to take advantage of one of Effects useful data structures? You can do it with Effect today.
+
+However, as more and more of your codebase is using Effect, you will probably find yourself wanting to utilize more of the ecosystem!
 
 ---
 
@@ -662,7 +714,7 @@ const program = Effect.gen(function* (_) {
 console.log(Effect.runSync(program)); // Output: "Result is: 6"
 ``` -->
 <pre>
-<code style="font-size:  .9em; line-height: 1em;" class="language-typescript">async function program() {
+<code style="font-size:  .88em; line-height: 1em;" class="language-typescript">async function program() {
   const [a, b] = await Promise.all([Promise.resolve(10), Promise.resolve(2)]);
   const n1 = await divide(a, b);
   const n2 = increment(n1);
@@ -672,7 +724,7 @@ console.log(Effect.runSync(program)); // Output: "Result is: 6"
 console.log(await program()); // Output: "Result is: 6"
 
 const program = Effect.gen(function* (_) {
-  const [a, b] = yield* _(Effect.all(Effect.succeed(10), Effect.succeed(2)));
+  const [a, b] = yield* _(Effect.all([Effect.succeed(10), Effect.succeed(2)]));
   const n1 = yield* _(divide(a, b));
   const n2 = increment(n1);
   return `Result is: ${n2}`;
@@ -681,7 +733,7 @@ const program = Effect.gen(function* (_) {
 console.log(Effect.runSync(program)); // Output: "Result is: 6"</code></pre>
 
 notes:
-And lastly, if you think you could get out of using Effect because 'functional programming is too different and too difficult', think again. Effect has its own form of 'async-await' style syntax powered by generators. With generators you can write effectful code in the imperative way you already know.
+And lastly, if you think you could get out of using Effect because 'functional programming is too different and too difficult', think again. Effect has its own form of 'async-await' style syntax powered by generators. With generators you can write effectful code in the imperative way that you already know.
 
 ---
 
@@ -693,7 +745,9 @@ And lastly, if you think you could get out of using Effect because 'functional p
 
 notes:
 
-Effect is still young, but ready to power the typescript applications of today and tomorrow.
+Effect's concepts may be new to you, and might not completely make sense at first. This is totally normal. 
+
+Learning Effect is a lot of fun. Many developers in the Effect ecosystem are using Effect today to solve real problems in their day-to-day work, as well as experimenting with cutting edge ideas for pushing TypeScript to be the most useful language it can be.
 
 I hope you feel inspired to give the Effect documentation a read, and to explore the Effect repositories and API Reference pages.
 
@@ -707,7 +761,7 @@ Finally a big thank you and shoutout to no boilerplate, to whom this video takes
 
 His videos are incredible and inspired my passion for rust, just like I hope this video will inspire your passion for Effect.
 
-Please check out his channel link also in description.
+Please check out his channel link also in the description.
 
 Thank so much for watching, and I'll see you next time.
 
