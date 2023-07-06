@@ -1,8 +1,19 @@
+---
+theme: blood
+---
 
 <style>
-.reveal code.ts {
-  font-size: 1.5em;
+.reveal code.tsx {
+  font-size:  1em;
   line-height: 1.5em;
+}
+.reveal code.ts {
+  font-size:  .6em;
+  line-height: 1em;
+}
+.reveal code.js {
+  font-size:  .8em;
+  line-height: 1em;
 }
 </style>
 
@@ -11,16 +22,16 @@
 ### Next-Generation Typescript
 
 notes:
-Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create complex, synchronous, and asynchronous programs.
+Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create the complex programs of today.
 
-As web developers we are stuck with javascript (and all of its quirks) whether we like it or not, 
+We are stuck with javascript (and all of its quirks) whether we like it or not, 
 typescript has been a big step, but the privatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
 
 ---
 
 How often have you seen this kind of code?
 
-```typescript
+```tsx
 async function getData(): Data {
 	const response = await fetch("https://api.example.com/foo");
 	const json = await response.json();
@@ -37,7 +48,7 @@ The biggest problem is that this function could crash your program, but doesn't 
 
 ---
 
-```ts
+```tsx
 async function getData(): Data {
 	const response = await fetch("...");
 	const json = await response.json();
@@ -45,8 +56,8 @@ async function getData(): Data {
 }
 ```
 
-1.  `fetch` can throw
-2.  `json` can throw
+1.  `fetch` can reject
+2.  `json` can reject
 3.  `parse` can throw
 4.  each of these is a different kind of error that may be handled differently
 
@@ -55,7 +66,7 @@ Unsafe assumptions crash our programs at runtime and wake us up at 4am.
 
 ---
 
-```ts
+```tsx
 let data: Data;
 try {
 	data = getData();
@@ -65,13 +76,15 @@ catch (exception: unknown) {
  }
 ```
 
+How sure are you that you won't forget to catch
+
 notes:
 handling these cases properly in vanilla typescript is less than ideal. what if you forget to try/catch? what if you forget one of the possible errors?
 
 ---
 
 
-```ts
+```tsx
 function getData(): Effect.Effect<never, never, Data> {
   return pipe(
     Effect.tryPromise(() => fetch("https://api.example.com/foo")),
@@ -90,7 +103,7 @@ notes:
 This is exactly as unsafe as the original function, but the three places it can crash are now explicitly stated.
 If you want it to never crash, you find alternatives for those .orDie()s
 
-Here's a verbose version of what that might look like
+Here's an verbose version of what that might look like
 
 ---
 
@@ -124,391 +137,404 @@ function getData(): Effect.Effect<
 ```
 
 notes:
-Here is a verbose version of what that might look like.
-Effect ...
+I know this may seem like a lot, but this is mostly caused by having to work around existing apis that are designed around try/catch.
+
+It takes a bit of work at the weeds, but once your into the Effect world things become much easier
 
 ---
 
-An idiomatic rust solution
+An idiomatic Effect solution
 
-```rust
-let viewcount = item.get("ViewCount")?;
-let sus_n = viewcount.get("N")?;
-let n = i32::from_str_radix(sus_n, 10)?;
+```tsx
+function getData(): Effect.Effect<
+  never,
+  FetchError | JSONError | ParseError,
+  Data
+> {
+  return pipe(
+    fetchDataToEffect(),
+    Effect.flatMap((rawData) => dataSchema.parseToEither(rawData))
+  );
+}
 ```
 
-Each `?` will immediately return the `Result` to the calling function, on error.
+Errors automatically bubble up to form a separate 'happy' and 'error' path
 
 
 notes:
-An idiomatic rust solution looks like this.
+An idiomatic Effect solution looks like this.
 Don't worry too much about the specifics here.
-We'll talk about basic rust syntax soon.
+We'll talk about basic Effect types and functions soon.
 
 I just wanted to give you a taste.
 
 ---
 
-Problems today:
-- Security breaches
-- ransomware attacks
-- operational failures
-- safety critical failures
+## Problems today:
+- ## Javascript
 
 notes:
-Broken software hurts people, and slows down human progress
+The love/hate relationship with javascript is something most developers share, you can't seem to escape it. The language has grown a lot, with new modern features and typescript making development surprising pleasant. But the pain points are still there.
 
-We now have a much better solution to these problems.
-
-Rust is a really pleasant language to write code in.
-But that's not what we're here to talk about.
 
 ---
 
-We're here to talk about making perfect software.
+Effect brings typescript up another level, providing powerful primitives to make writing **safe**, **asynchronous**, **resourceful**, **composable**, **concurrent**, and **observable** programs easier than ever before.
 
 ---
 
-
-I'm TIRED of trawling error logs for it to tell me: 
-- `"unexpected ; in query"`, or 
-- `json decoding error on line 1`
-- `NullPointerException` (or `NoneType has no atribute`)
+## Isn't typescript already safe?
 
 notes:
-I've been searching for many years for systems, frameworks and methods to make my code more reliable, or guarenteed.
-We as developers accept that our lives are governed by errors.
-Often bullshit errors like these.
+Lets start with type safety. 
+
+---
+
+```tsx
+type SomeFn = () => T
+```
+Could this function throw? If so, what is the type of the thrown error?
+
+```tsx
+type SomeAsyncFn = () => Promise<T>
+```
+Could this promise reject? If so, what type is returned?
+
+notes:
+What's the problem with these two types? ...theyre only generic over one parameter
+
+Typescript gives us the illusion of safety, but once things go off the happy path your left in the dark.
 
 I am here to tell you that it doesn't have to be that way.
 
 ---
 
-## Rust provides memory safety 
-## without
-## a garbage collector
+### The Effect Type
 
-notes:
-You may have heard that "Rust provides memory safety without a garbage collector".
-
-I don't care about memory safety, I've never had to.
-
-Java, python, ruby, node, go - they all ensure memory safety by running a second program alongside your program, checking memory is freed when it is no longer used.
-
-This is called, as you may know, the garbage collector.
-
-The Rust team identified the need for memory safety without a garbage collector as a key problem to be fixed.
-
-So they implemented a genius simple method to keep track of memory, called the borrow checker.
-
-But here's the thing:
-
----
-
-In fixing memory safety the Rust team
-
-ACCIDENTALLY FIXED EVERYTHING  
-  
-(that I do care about)
-
----
-
-In making a compiler that understands your code in a very deep way, and a rich type system that supports that compiler, they gave us, the developers, all of that control, the potential to build the perfect language and ecosystem.
-
-The rust community, over 16 years, has delivered.
-
----
-## Familiar
-
-```rust
-println!("Hello world");
+```tsx
+type Effect<Requirements, Error, Value> = (
+	context: Context<Requirements>
+) => Error | Value
 ```
 
 notes:
-Rust has a familiar c-like syntax that javascript, go and java developers will be familiar with. Even delicate python developers such as me won't be too confused.
+The Effect type is the core of the entire Effect ecosystem.
+
+It encapsulates the logic of a program that requires some Requirements to execute. This program can either fail, producing an error of type `Error`, or succeed, yielding a value of type `Value`.
+
+Although their actual implementation is more complex than this, it can be helpful to think of `Effect` as a function that takes in requirements as arguments and returns either a value or an error
 
 ---
 
-## High level features / Low level speed
+Promises kind of suck...
 
-```rust
-let sum_of_squares: u32 = 
-    (1..6).map(|x| x * x).sum();
+notes:
+Asynchronous code is everywhere in modern apps, but the `Promise` primitive leaves a lot to be desired
+
+- Promises are Eagerly executed, meaning they begin execution immediately on creation. This means they can never be used to represent a computation, only an already running computation that might have already completed and produced a value.
+- Also, the value produced by the Promise is implicitly memoized, meaning that when the Promise is settled, the internal state of the Promise is frozen and can't be changed anymore, whether the Promise is fulfilled or rejected. Consequently if you want to run the same computation again, you'll need to recreate the entire Promise from scratch.
+
+---
+
+An Effect is a description of a program
+
+```tsx
+// Effect<never, never, number>
+const program = Effect.sync(() => {
+	console.log("Hello, World!");
+	return 1;
+})
+Effect.runSync(program) // 1
 ```
 
 notes:
-Here are functional-style iterators, but this is just one of the many zero-cost abstractions that translate down to simple loops
+The `Effect` data type represents an **immutable** value that **lazily** describes a workflow or job, and all Effect functions produce new `Effect` values.
 
-No matter how clever your language is, the processor running your code only understands bits and a few operators.
+`Effect` values do not actually do anything, they are just values that model or describe effectful interactions.
 
-Rust gets your high-level code RIGHT DOWN to that bare metal without sacrificing high-level developer ergonomics.
+An `Effect` can be interpreted by the Effect Runtime System into effectful interactions with the external world.
 
 ---
 
-## Think In Expressions
+## `Effect` enables incredible things
 
-```rust
-if x { // statement
-    y = a;
-} else {
-    y = b;
-}
-// expression:
-y = if x { a } else { b };
+notes:
+If your like me, your mind is probably racing at this point. I am now going to give you a tour of some of the things that the Effect ecosystem offers, don't worry about the specifics, I'll go into more depth in future videos, just get an idea of what is possible.
+
+---
+
+## Error handling
+
+```tsx
+// Effect<never, BazError, string>
+const recovered = pipe(
+  program, // Effect<never, FooError | BarError | BazError, string>
+  Effect.catchTag("FooError", (fooError) =>
+    Effect.succeed("Recovering from FooError")
+  ),
+  Effect.catchTag("BarError", (barError) =>
+    Effect.succeed("Recovering from BarError")
+  )
+);
 ```
 
 notes:
-Semicolons finally have proper MEANING.
-
-Line-oriented statements come from punched cards.
-Punched cards are statements.
-
-We can do better.
+now that errors are in their own dedicated channel and clearly separated by type it becomes trivial to handle errors case by case, all at once, or to let them bubble up to the next effect 
 
 ---
 
-Think in Iterators
+## Dependecy Injection
 
-```rust
-(1..10).map(f)
-
-names.iter()
-    .filter(|x| x.starts_with("A"))
-```
-
-notes:
-in rust, you think in iterators, as data being transformed through functions.
-
----
-
-## Options Everywhere
-
-```rust
-let possibly_a_number = Some(1);
-
-possibly_a_number
-    .map(|n| n + 1)
-    .unwrap_or(0);
-```
-
-notes:
-You can use all iterator methods on `Option`s
-No nulls in the whole language
-
----
-
-## Rich Types Make Invalid States Unrepresentable
-
-```
-enum Living { Alive, Dead }
-enum Planet { 
-Mercury, Venus,  Earth,  Mars, 
-Jupiter, Saturn, Uranus, Neptune
-}
-struct Human {name: String, state: Living, home: Planet}
-```
-```rust
-let user = Human {
-    name: "Tris",
-    state: Living::Alive,
-    home: Planet::Earth}
-```
-
-notes:
-In this example, a human has to be alive or dead, and has to live on a planet. No nulls, no anonymous objects.
-
-In Rust you tell the compiler how the world works, and it will hold you, and everyone who contributes to your code, accountable to the contract you have written.
-
-This may be a new way of programming for you, but it's such a good pattern that this is now how I try to write my python.
-
----
-
-### Modern Tooling
-
-- **cargo** - packaging, building
-- **cargo fmt** - standard formatting
-- **cargo test** - doc and unit tests
-- **cargo bench** - benchmarking
-- **cargo clippy** - code linting
-- **rustup** - rust version switching
-
-notes:
-Rust has a best-in-class package manager, solving all the dependency nightmares we face day-to-day.
-
-This is what you get when you have a community focussed on corectness.
-
----
-
-### Async syntax done RIGHT
-
-```javascript
-// javascript
-const response = await fetch("http://example.com");
-const data = await response.text();
-console.log(data);
-```
-
-```rust
-// rust
-let data = fetch("http://example.com")
-	.await
-	.response
-	.await
-	.text;
-println!(data);
-```
-
-notes:
-In JS if you remember, we had to wait YEARS for async/await to be standardised, and we still can't get it in all browsers.
-
-In rust, it was prototyped as a Macro.
-
----
-
-### Built-in preprocessing with Macros
-
-```rust[2-5]
-let name = "Tris";
-let page = html! { 
-    <div id="component">
-        hello { name }
-    </div>
-};
-println("{}", page);
-```
-
-notes:
-(the macro used here is `html_macro`)
-The language is extended with macros, code that executes at compile time, which are installed as simple libraries, same as everything else.
-
-Macros convert new syntax back to type-safe rust, which is then fed into the compiler.
-You don't have to throw out the safety of rust to use new features TODAY
-
-If you've use babel, webpack or the million other javascript precompilers, you've used a bad, error-prone, ill-defined, macro system.
-
----
-
-
-Let's look at some real-world rust.
-
-```c
-#[get("/hello/<name>/<age>")]
-fn hello(name: String, age: u8) -> String {
- return format!("Hello, {} year old named {}!", age, name)
+```tsx
+async function getUserFromDB(userId: number) {
+	return await db.user.getById(userId);
 }
 ```
 
-
 notes:
-Here's how you write a simple get request in Rocket, a Rust web framework.
+Whats wrong with this snippet?
 
-You can probably read this without my help. It's a pattern we've all seen before.
+Well nothing, until you want to swap your live db client for a local test one.
 
-The first line isn't a comment though, it's a macro, which enriches and rewrites the enclosed function before the source code gets passed to the compiler.
+Sure we could go full pure functional programming and pass every possible dependency as an argument, but that quickly becomes unrealistic
 
-It's a simple hello world http endpoint, with built-in compile-level validation of guaranteed-valid utf8 strings, and a rudimentary understanding that people shouldn't be negative years old, or over 255.
-
-I'll admit, that's optimistic validation.
-
-But we can do better, we have the technology.
+Effect provides a better way
 
 ---
 
-```c
-#[get("/published/<id>")]
-async fn forms_by_id(id: Path<UUID>) -> FormResponse {
-  return sqlx::query_as!(
-      Form,
-      "SELECT * FROM forms WHERE id=$1;",
-      id
-    ).fetch_one()
-    .await
-    .expect("");
+Dependency Injection
+
+```tsx
+type DBClient = {
+	user: { getById(userId: number): User }
+}
+const DBClient = Context.Tag<DBClient>();
+
+// returns Effect.Effect<DBClient, never, User>
+function getUserFromDB(userId: number) {
+	return pipe(
+		DBClient,
+		Effect.map((db) => db.user.getById(userId))
+	)
+}
 ```
 
-
 notes:
-DON'T BE SCARED.
-I promise we can get through this.
 
-Lets reason about this short piece of code.
+A `Tag` in effect is a placeholder for a dependency of some type. We can use the Tag just as if it was the actual implemented object in our Effects without ever actually implementing it. Doing so causes that type to appear in the `Requirements` field of the resulting effect.
 
-It's still using the Rocket web framework, by the way, think of it as an Express, Sinatra, or Flask equivalent.
-
-If our program compiles we know many things are guarenteed:
-- `id` will be a valid UUID, from a valid http path
-- The return json will ALWAYS be in the schema we designed,  named FormResponse, with defined values acting as the contract we can never break with our API clients.
-- sqlx actually runs that query on my local dev database with a valid test input (generated on the type) in a rolled-back transaction at compile time. If it is invalid, my code doesn't compile.
-    - Yeah, this is magic. RUST magic.
-
-So far so great, but there's more:
-- No memory leaks
-- No SQL injection - all guaranteed at compile time
-- And you get all of this with no heavyweight, slow abstractions - this all compiles down to for loops and if statements: close to C speed, running on bare metal.
----
-
-## #![forbid(unsafe_code)]
-
-notes:
-But We can do even better:
-- By adding the `#![forbid(unsafe_code)]` directive we forbid 
- the `unsafe` block, and therefore any linking to operating system libraries (ie, external c code), guaranteeing our app is pure rust, and therefore does not break any of our guarantees.
-- But what about native libraries that you NEED to link to such as:
-    - Libpq-dev for postgres
-    - Pandas/Numpy
-    - or OpenSSL
-
-The rust community has rewritten all of these in pure rust
-Not even OpenSSL has escaped Oxidation.
+This tells the effect runtime that you must provide a implementation that matches the defined type before the program can be run. This can be done flexibly anywhere in your program, meaning it becomes simple to swap out the implementation of a dependency when required.
 
 ---
 
-Rust is a language for the next 40 years
+## Dependency Dependencies
 
-- High AND low level
-- Code for web assembly, containers, or bare metal chips
-- "Fast, reliable, productive — pick three"
-- "Fearless concurrency"
-- No Rust 2.0
+```mermaid
+graph TD
+  MeasuringCup --> Flour
+  MeasuringCup --> Sugar
+  Flour --> Recipe
+  Sugar --> Recipe
+```
+
+```tsx
+type ReceipeImplementation = Layer<Flour | Sugar, never, Recipe>
+```
 
 notes:
-The last 40 years were written in c, the next 40 will be written in rust.
+Modern apps are complex, often involving complex Dependency hierarchies. To account for this Effect provides `Layer` a type describing a blueprint for construction of a set of requirements. It takes some requirements in, may produce some error, and yields some requirements out.
+
+---
+
+## Resource Management
+
+```tsx
+// Effect<Scope, DBConnectionError, DataBase>
+const database = Effect.acquireRelease(connectToDB, disconnectFromDB)
+```
+
+notes:
+Resources in our applications may require  lifetime related logic.
+
+The `Scope` data type is fundamental for managing resources safely and in a composable manner in Effect.
+
+In simple terms, a scope represents the lifetime of one or more resources. When a scope is closed, the resources associated with it are guaranteed to be released.
+
+---
+
+## Logging
+
+```tsx
+const program = Effect.log("Application started")
+Effect.runSync(program)
+/*Output:timestamp=2023-07-05T09:14:53.275Z level=INFO
+fiber=#0 message="Application started"*/
+```
+
+notes:
+Modern applications require observability for us to know what is going on within them.
+
+Effect provides powerful logging capabilities, with different levels such as debug, info, warning and error, as well as the able to provide a custom logger that can do more than just a simple console.log.
+
+---
+
+### Resilience on Failures
+
+```js
+const schedule = pipe(
+	Schedule.exponential(Duration.millis(10)),
+	Schedule.jittered,
+	Schedule.whileOutput((n) => Duration.lessThan(n, Duration.millis(100)))
+)
+Effect.runPromise(Effect.repeat(logDelay, schedule))
+/*
+delay: 3
+delay: 18
+delay: 24
+delay: 48
+delay: 92
+*/
+```
+
+notes:
+
+Effect provides a powerful, composable scheduling toolkit for when you want to run an Effect more than once
+
+Have you ever tried implementing jittered exponential backoff?
+
+How many lines of vanilla typescript would it take you to build the same functionality as this snippet?
+
+---
+
+### Concurrency
+
+```tsx
+const promises = userIds.map(fetchUser);
+const users = Promise.all(promises);
+```
+
+notes:
+This code works while your meager startup only has 5 users, but what about when it grows to hundreds or thousands. That many requests will crash your users' devices. and remember promises, are eagerly executed so to solve this problem we'ed have to make some crazy promise factory async queue to control the level of parallelism
+
+or we could use effect
+
+---
+
+Controlled Concurrency
+
+```tsx
+const users = pipe(
+	Effect.collectAllPar(() => userIds.map(fetchUserEffect)),
+	Effect.withParallelism(10)
+)
+```
+
+notes:
+
+It really is this easy. Effects `fiber` based runtime manages everything for you.
+
+---
+### Fibers + Interruption
+```tsx
+const program = pipe(
+  Effect.logInfo("start"),
+  Effect.flatMap(() => Effect.sleep(Duration.seconds(2))),
+  Effect.flatMap(() => Effect.interrupt()),
+  Effect.flatMap(() => Effect.logInfo("done"))
+)
+Effect.runPromise(program).catch((error) =>
+  console.log(`interrupted: ${error}`)
+)
+// timestamp=...885Z level=INFO fiber=#0 message=start
+// interrupted: All fibers interrupted without errors.
+```
+
+notes:
+Lightweight threads of execution called `fibers` power effects runtime. Think of a fiber as a worker that performs a specific job. It can be started, paused, resumed, and even interrupted.
+
+Effect also seamlessly integrates with existing interruption APIs such as AbortController
+
+Working with Fibers directly is an advanced usecase you probably wont need for a while when starting out
+
+---
+
+### The Ecosystem is Massive
+
+- Configuration
+- Metrics
+- Schema Validation
+- Custom Data Structures
+- Pattern Matching
+- Caching
+- ... SO MUCH MORE
+
+notes:
+It feels like the Effect authors have thought of nearly everything under the sun. The Effect ecosystem is massive and provides tools to handle nearly every facit of modern application development.
+
+---
+
+### Effect is fully interoperable with existing code.
+
+notes:
+By now you might have thought back to other projects aimed at 'doing typescript better', that all which ultimately fell to the same fate, a lack of easy interop with the vast and unavoidable existing javascript ecosystem
+
+Not Effect. While it would be awesome to write applications that are 'Effect all the way down', you are by no means forced to.
+
+Just want to rewrite a single endpoint that does some complicated parallel async work? You can do it with Effect today.
+
+Just want to take advantage of one of Effects useful data structures? You can do it with Effect today.
+
+---
+
+### Generators
+
+```js
+async function program() {
+  const [a, b] = await Promise.all([Promise.resolve(10), Promise.resolve(2)])
+  const n1 = await divide(a, b)
+  const n2 = increment(n1)
+  return `Result is: ${n2}`
+}
+ 
+console.log(await program()) // Output: "Result is: 6"
+
+const program = Effect.gen(function* (_) {
+  const [a, b] = yield* _(Effect.all(Effect.succeed(10), Effect.succeed(2)))
+  const n1 = yield* _(divide(a, b))
+  const n2 = increment(n1)
+  return `Result is: ${n2}`
+})
+ 
+console.log(Effect.runSync(program)) // Output: "Result is: 6"
+```
+
+notes:
+And if you think you could get out of using Effect because 'functional programming is too different and too difficult', think again. Effect has its own form of 'async-await' style syntax powered by generators. With generators you can write effectful code in the imperative way you already know.
 
 ---
 
 
-In writing this, I wanted to invite you to get in on the ground floor with Rust, as it's going to be an industry-changing ride.
+![[effect-logo.png]]
+# Effect
+### Next-Generation Typescript
 
 notes:
-However, as I wrote this I realised that actually you have some walking to do.
 
-The Rust elevator is currently on the 16th floor.
+Effect is still young, but ready to power the typescript applications of today and tomorrow.
 
----
+I hope you feel inspired to give the Effect documentation a read, and to explore the Effect repositories and API Reference pages.
 
-![[lang-rank-0122-wm.png]]
+Consider joining the Effect discord server, a great community for learning and discussing effect.
 
-notes:
-There are more rust projects on github than Scala, Kotlin, Swift, CoffeeScript and Perl.
+Links to all of that as well as the transcript and markdown sourcecode to this video are available in the description
 
-It's time to take rust seriously, first in your personal projects and learning, and soon, at your work.
-
----
-
-
-![[rust-logo.png]]
-# Rust
-Your code can be perfect
-
-notes:
-Because, finally, our code can be perfect.
-
-If you'd like to see what you can write in rust, click the top video: I used it to make a fun retro computer visualisation for my scifi and mental health podcast, Lost Terminal.
-
-And if you'd like to watch more of my fast, technical videos, click the bottom video.
-
-Transcripts and markdown sourcecode are available on github, links in the description.
 And corrections are in the pinned comment.
+
+Finally a big thank you and shoutout to no boilerplate, to whom this video takes very strong inspiration from.
+
+His videos are incredible and inspired my passion for rust, just like I hope this video will inspire your passion for Effect.
+
+Please check out his channel link also in description.
 
 Thank so much for watching, see you next time.
 
