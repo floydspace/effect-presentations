@@ -146,21 +146,21 @@ function getData(): Effect.Effect<
   Data
 > {
   return pipe(
-    Effect.tryCatchPromise(
-      () => fetch("https://api.example.com/foo"),
-      () => new FetchError()
-    ),
+    Effect.tryPromise({
+      try: () => fetch("https://api.example.com/foo"),
+      catch: () => new FetchError(),
+    }),
     Effect.flatMap((res) =>
-      Effect.tryCatchPromise(
-        () => res.json(),
-        () => new JSONError()
-      )
+      Effect.tryPromise({
+        try: () => res.json(),
+        catch: () => new JSONError(),
+      })
     ),
     Effect.flatMap((json) =>
-      Effect.tryCatch(
-        () => dataSchema.parse(json),
-        () => new ParseError()
-      )
+      Effect.try({
+        try: () => dataSchema.parse(json),
+        catch: () => new ParseError(),
+      })
     )
   );
 }
@@ -172,21 +172,21 @@ function getData(): Effect.Effect<
   Data
 &gt; {
   return pipe(
-    Effect.tryCatchPromise(
-      () =&gt; fetch("https://api.example.com/foo"),
-      () =&gt; new FetchError()
-    ),
+    Effect.tryPromise({
+      try: () => fetch("https://api.example.com/foo"),
+      catch: () => new FetchError(),
+    }),
     Effect.flatMap((res) =&gt;
-      Effect.tryCatchPromise(
-        () =&gt; res.json(),
-        () =&gt; new JSONError()
-      )
+      Effect.tryPromise({
+        try: () => res.json(),
+        catch: () => new JSONError(),
+      })
     ),
     Effect.flatMap((json) =&gt;
-      Effect.tryCatch(
-        () =&gt; dataSchema.parse(json),
-        () =&gt; new ParseError()
-      )
+      Effect.try({
+        try: () => dataSchema.parse(json),
+        catch: () => new ParseError(),
+      })
     )
   );
 }</code></pre>
@@ -507,11 +507,17 @@ Modern apps are complex, often involving complex Dependency hierarchies. To acco
 
 <!-- ```tsx
 // Effect<Scope, DBConnectionError, DataBase>
-const database = Effect.acquireRelease(connectToDB, disconnectFromDB);
+const database = Effect.acquireRelease({
+  acquire: connectToDB,
+  release: disconnectFromDB,
+});
 ``` -->
 <pre>
 <code class="language-typescript">// Effect&lt;Scope, DBConnectionError, DataBase&gt;
-const database = Effect.acquireRelease(connectToDB, disconnectFromDB);</code></pre>
+const database = Effect.acquireRelease({
+  acquire: connectToDB,
+  release: disconnectFromDB,
+});</code></pre>
 
 notes:
 Resources in our applications may require lifetime related logic.
@@ -606,14 +612,16 @@ or we could use effect
 
 <!-- ```tsx
 const users = pipe(
-  Effect.collectAllPar(() => userIds.map(fetchUserEffect)),
-  Effect.withParallelism(10)
+  Effect.all(userIds.map(fetchUserEffect), {
+    concurrency: 10,
+  })
 );
 ``` -->
 <pre>
 <code class="language-typescript">const users = pipe(
-  Effect.collectAllPar(() =&gt; userIds.map(fetchUserEffect)),
-  Effect.withParallelism(10)
+  Effect.all(userIds.map(fetchUserEffect), {
+    concurrency: 10,
+  })
 );</code></pre>
 
 notes:
