@@ -25,7 +25,7 @@ notes:
 Hi, I'm Ethan and this video is an introduction to 'Effect', a typescript library to help developers easily create the complex programs of today.
 
 We are stuck with javascript (and all of its quirks) whether we like it or not, 
-typescript has been a big step, but the privatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
+typescript has been a big step, but the primatives its built on are still fundamentally flawed. it's time to build with a library designed to handle the complexity of modern development
 
 ---
 
@@ -73,7 +73,7 @@ try {
 } 
 catch (exception: unknown) {
 	switch(exception) { /* ... */ }
- }
+}
 ```
 
 How sure are you that you won't forget to catch
@@ -171,7 +171,7 @@ I just wanted to give you a taste.
 ---
 
 ## Problems today:
-- ## Javascript
+## 1. Javascript
 
 notes:
 The love/hate relationship with javascript is something most developers share, you can't seem to escape it. The language has grown a lot, with new modern features and typescript making development surprising pleasant. But the pain points are still there.
@@ -191,12 +191,12 @@ Lets start with type safety.
 ---
 
 ```tsx
-type SomeFn = () => T
+type SomeFn<T> = () => T
 ```
 Could this function throw? If so, what is the type of the thrown error?
 
 ```tsx
-type SomeAsyncFn = () => Promise<T>
+type SomeAsyncFn<T> = () => Promise<T>
 ```
 Could this promise reject? If so, what type is returned?
 
@@ -294,7 +294,7 @@ async function getUserFromDB(userId: number) {
 notes:
 Whats wrong with this snippet?
 
-Well nothing, until you want to swap your live db client for a local test one.
+Well nothing, until you want to swap your live database client for a local test one.
 
 Sure we could go full pure functional programming and pass every possible dependency as an argument, but that quickly becomes unrealistic
 
@@ -342,7 +342,7 @@ type ReceipeImplementation = Layer<Flour | Sugar, never, Recipe>
 ```
 
 notes:
-Modern apps are complex, often involving complex Dependency hierarchies. To account for this Effect provides `Layer` a type describing a blueprint for construction of a set of requirements. It takes some requirements in, may produce some error, and yields some requirements out.
+Modern apps are complex, often involving complex Dependency hierarchies. To account for this Effect provides `Layer` a type describing a blueprint for the construction of a set of requirements. It takes some requirements in, may produce some error, and yields some requirements out.
 
 ---
 
