@@ -619,7 +619,7 @@ Working with Fibers directly is an advanced usecase you probably wont need for a
 - Schema Validation
 - Custom Data Structures
 - Pattern Matching
-- Caching
+- Caching + Batching
 - ... SO MUCH MORE
 
 notes:
