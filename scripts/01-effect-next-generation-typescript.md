@@ -634,7 +634,7 @@ It really is this easy. Effects `fiber` based runtime manages everything for you
 
 <!-- ```tsx
 const program = pipe(
-  Effect.logInfo("start"),
+  Effect.log("start"),
   Effect.flatMap(() => Effect.sleep(Duration.seconds(2))),
   Effect.flatMap(() => Effect.interrupt()),
   Effect.flatMap(() => Effect.logInfo("done"))
@@ -647,7 +647,7 @@ Effect.runPromise(program).catch((error) =>
 ``` -->
 <pre>
 <code class="language-typescript">const program = pipe(
-  Effect.logInfo("start"),
+  Effect.log("start"),
   Effect.flatMap(() =&gt; Effect.sleep(Duration.seconds(2))),
   Effect.flatMap(() =&gt; Effect.interrupt()),
   Effect.flatMap(() =&gt; Effect.logInfo("done"))
