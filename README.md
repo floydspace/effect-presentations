@@ -4,34 +4,35 @@ https://www.youtube.com/c/NoBoilerplate
 https://www.youtube.com/c/NoBoilerplate
 https://www.youtube.com/c/NoBoilerplate
 
-Code for my talks on the No Boilerplate channel is in `scripts/`
+Code for my talks is in `scripts/`
 
-I build these using [obsidian.md](https://obsidian.md/) and the [advanced-slides plugin](https://github.com/MSzturc/obsidian-advanced-slides): I take each slide, printscreen it, and splice it with my audio using [reaper.fm](http://reaper.fm/).
+I build these using [obsidian.md](https://obsidian.md/) and the [advanced-slides plugin](https://github.com/MSzturc/obsidian-advanced-slides): I take each slide, printscreen it, and splice it with my audio using [Audacity](https://www.audacityteam.org/)
 
 ---
 
-[![Screenshot from 2022-07-13 17-49-52](https://user-images.githubusercontent.com/114097/178788174-86a6e745-a5cb-4d0c-820f-85cedfe9618d.png)](https://www.youtube.com/c/NoBoilerplate)
-
-# Recommended Rust Reading
+# Recommended Effect Reading
 
 Here are some great resources that I used to teach myself:
 
-- The Book
-  https://doc.rust-lang.org/stable/book/
+- The Docs
+  https://effect.website/
 
-- Everything on fasterthanli.me, starting with
-  https://fasterthanli.me/articles/understanding-rust-futures-by-going-way-too-deep
+- The Effect Discord Server
+  https://discord.gg/effect-ts
 
-- Rust By Example (follows the same chapter ordering to The Book)
-  https://doc.rust-lang.org/rust-by-example/
+- Effect Introduction
+  https://github.com/antoine-coulon/effect-introduction
 
-- Rustlings code kata, learn by fixing tiny failing tests
-  https://github.com/rust-lang/rustlings
+- Effect Crashcourse
+  https://github.com/pigoz/effect-crashcourse
 
-- My video series on Rust (of course!) playlist here, watch RUST-6 first (my recommended set up) and then the rest in any order:
-  https://www.youtube.com/watch?v=ifaLk5v3W90&list=PLZaoyhMXgBzoM9bfb5pyUOT3zjnaDdSEP&index=6
+- Introduction to Effect (conference talk)
+  https://youtu.be/zrNr3JVUc8I
 
-- My Discord server, especially #programming and #newbie-advice. There's a huge community of friendly folks here, answering questions on Rust all day every day. Do tag me and say hi!
-  https://discord.gg/mCY2bBmDKZ
+- Zio (Effect's scala older brother)
+  Zio and Effect have a ton of overlap. If there isn't a effect tutorial for something, check if one exists for the same topic in Zio
+  - Zio docs: https://zio.dev/
+  - Also just search "Zio <topic>" on youtube theres a bunch of content
+
 
 Have fun, and good luck!
