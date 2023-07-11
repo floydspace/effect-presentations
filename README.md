@@ -4,7 +4,9 @@ https://www.youtube.com/c/NoBoilerplate
 https://www.youtube.com/c/NoBoilerplate
 https://www.youtube.com/c/NoBoilerplate
 
-Code for my talks is in `scripts/`
+---
+
+Code for my videos is in `scripts/`
 
 I build these using [obsidian.md](https://obsidian.md/) and the [advanced-slides plugin](https://github.com/MSzturc/obsidian-advanced-slides): I take each slide, printscreen it, and splice it with my audio using [Audacity](https://www.audacityteam.org/)
 
