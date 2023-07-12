@@ -771,6 +771,6 @@ His videos are incredible and inspired my passion for rust, just like I hope thi
 
 Please check out his channel link also in the description.
 
-Thank so much for watching, and I'll see you next time.
+Thank you so much for watching, and I'll see you next time.
 
 ---
