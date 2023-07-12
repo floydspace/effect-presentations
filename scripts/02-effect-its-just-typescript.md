@@ -10,7 +10,6 @@ code.language-typescript {
   line-height: 1.5em;
 }
 </style>
-<script src="./attachments/me.js"></script>
 
 ![[effect-logo.png]]
 ## Effect
@@ -30,9 +29,12 @@ Effect is something new, a new way to solve our long existing problems with java
 
 ---
 
-```ts
+<!-- ```ts
 function fn(): number throws Error { ... }
-```
+``` -->
+<pre>
+<code class="language-typescript">function fn(): number throws Error { ... }</code></pre>
+
 ![[throws-issue-closed.png]]
 notes:
 A typescript pr back from 2016 asking for functions to be able to declare what they throw was recently closed by the typescript team.
@@ -46,7 +48,7 @@ a language fundamentally based around try catch with untyped error?
 a language built around a flawed async primitive, promise?
 
 ---
-## You can do a lot with TypeScript
+You can do quite a lot with TypeScript
 
 notes:
 
@@ -67,7 +69,7 @@ you just npm install and run however you did before. This is important and inten
 
 ---
 
-## Effect isn't *like* "TypeScript"
+Effect isn't *like* "TypeScript"
 
 notes:
 
@@ -118,23 +120,37 @@ These and other functional programming concepts are powerful, and drive effect u
 
 ---
 
-Why
-```ts
+Why?
+<!-- ```ts
 import * as Effect from '@effect/io/Effect';
 const foo = Effect.all([foo, bar]).pipe(
   Effect.flatMap(([a, b]) => divide(a, b)),
   Effect.map((n1) => increment(n1)),
   Effect.map((n2) => `Result is: ${n2}`)
 )
-```
-and not
-```ts
+``` -->
+<pre>
+<code class="language-typescript" style="font-size: .88em">import * as Effect from '@effect/io/Effect';
+const foo = Effect.all([foo, bar]).pipe(
+  Effect.flatMap(([a, b]) => divide(a, b)),
+  Effect.map((n1) => increment(n1)),
+  Effect.map((n2) => `Result is: ${n2}`)
+)</code></pre>
+
+and not?
+<!-- ```ts
 import { Effect } from '@effect/io/Effect';
 const foo = Effect.all([foo, bar])
   .flatMap(([a, b]) => divide(a, b))
   .map((n1) => increment(n1))
   .map((n2) => `Result is: ${n2}`);
-```
+``` -->
+<pre>
+<code class="language-typescript" style="font-size: .88em">import { Effect } from '@effect/io/Effect';
+const foo = Effect.all([foo, bar])
+  .flatMap(([a, b]) => divide(a, b))
+  .map((n1) => increment(n1))
+  .map((n2) => `Result is: ${n2}`);</code></pre>
 
 notes:
 The two things you are likely to immediately notice about Effect code is the use of namespaced imports and `pipe`
@@ -143,7 +159,7 @@ these may be slightly different to patterns you used to, but give me a chance to
 
 ---
 
-```rust
+<!-- ```rust
 struct Foo;
 
 impl Foo {
@@ -156,7 +172,21 @@ fn main() {
     let x = Foo;
     x.bar();
 }
-```
+``` -->
+<pre>
+<code class="language-rust">struct Foo;
+
+impl Foo {
+    fn bar(self) {}
+}
+
+fn main() {
+    let x = Foo;
+    Foo::bar(x);
+    let x = Foo;
+    x.bar();
+}</code></pre>
+
 
 These two calls to `foo` are identical
 
@@ -165,7 +195,7 @@ Whether your following a functional or object oriented paradigm, most of code in
 
 ---
 
-```ts
+<!-- ```ts
 class Foo {
 	bar() {}
 }
@@ -173,12 +203,25 @@ class Foo {
 let x = new Foo();
 x.bar();
 Foo.prototype.bar.call(x);
-```
+``` -->
+<pre>
+<code class="language-typescript">class Foo {
+	bar() {}
+}
 
-```ts
+let x = new Foo();
+x.bar();
+Foo.prototype.bar.call(x);</code></pre>
+
+
+<!-- ```ts
 function bar(self: Foo) {}
 bar(x);
-```
+``` -->
+<pre>
+<code class="language-typescript">function bar(self: Foo) {}
+bar(x);</code></pre>
+
 
 These are different
 
@@ -187,7 +230,7 @@ But back in javascript things are quite different. When we create a method on a 
 
 ---
 
-```ts
+<!-- ```ts
 // Foo.ts
 function bar(self: Foo) {}
 
@@ -196,7 +239,16 @@ import * as Foo from './Foo.ts'
 let x = new Foo();
 Foo.bar(x);
 pipe(x, Foo.bar);
-```
+``` -->
+<pre>
+<code class="language-typescript">// Foo.ts
+function bar(self: Foo) {}
+
+// index.ts
+import * as Foo from './Foo.ts'
+let x = new Foo();
+Foo.bar(x);
+pipe(x, Foo.bar);</code></pre>
 
 notes:
 The apis in Effect are pretty big. @effect/io/Effect has over 300 functions. In reality though you'll probably only use 10-20 consistently in most code. But what about all those other unused functions? If they were all under one class it would be impossible for a bundler to tree shake them.
@@ -205,24 +257,39 @@ Thats why Effect uses namespace imports. each effect module consists of a bunch 
 
 ---
 Massive Bundle:
-```ts
+<!-- ```ts
 import { Effect } from '@effect/io/Effect';
 const foo = Effect.all([foo, bar])
   .flatMap(([a, b]) => divide(a, b))
   .map((n1) => increment(n1))
   .map((n2) => `Result is: ${n2}`);
-```
+``` -->
+<pre>
+<code class="language-typescript" style="font-size: .9em">import { Effect } from '@effect/io/Effect';
+const foo = Effect.all([foo, bar])
+  .flatMap(([a, b]) => divide(a, b))
+  .map((n1) => increment(n1))
+  .map((n2) => `Result is: ${n2}`);</code></pre>
+
 
 Tree Shaken:
 
-```ts
+<!-- ```ts
 import * as Effect from '@effect/io/Effect';
 const baz = Effect.all([foo, bar]).pipe(
   Effect.flatMap(([a, b]) => divide(a, b)),
   Effect.map((n1) => increment(n1)),
   Effect.map((n2) => `Result is: ${n2}`)
 )
-```
+``` -->
+<pre>
+<code class="language-typescript" style="font-size: .9em">import * as Effect from '@effect/io/Effect';
+const baz = Effect.all([foo, bar]).pipe(
+  Effect.flatMap(([a, b]) => divide(a, b)),
+  Effect.map((n1) => increment(n1)),
+  Effect.map((n2) => `Result is: ${n2}`)
+)</code></pre>
+
 notes:
 And with pipe the code comes out looking pretty similar to a traditional chained method approach.
 
@@ -230,20 +297,21 @@ And with pipe the code comes out looking pretty similar to a traditional chained
 
 `pipe`
 
-```ts
+<!-- ```ts
 const result = pipe(input, func1, func2, ..., funcN)
-```
+``` -->
+<pre>
+<code class="language-typescript">const result = pipe(input, func1, func2, ..., funcN)</code></pre>
 
-```mermaid
-flowchart LR
-  input([input]) --> func1 --> func2 --> ... --> funcN --> result([final result])
-```
+
+![[pipe-mermaid.png]]
+
 notes:
 Pipe is a simple but powerful tool to chain successive operations. It takes a starting piece of data and a series of functions. It starts by calling the first function with the input data, then calls the next function with the result of the previous function, and so on. It's important to note that functions passed to `pipe` must have a **single argument** because they are only called with a single argument, the result of the previous function.
 
 ---
 
-```ts
+<!-- ```ts
 const increment = (x: number) => x + 1
 const double = (x: number) => x * 2
 const subtractTen = (x: number) => x - 10
@@ -252,16 +320,29 @@ const result = pipe(5, increment, double, subtractTen)
 // identical to subtractTen(double(increment(5)))
  
 console.log(result) // Output: 2
-```
+``` -->
+<pre>
+<code class="language-typescript">const increment = (x: number) => x + 1
+const double = (x: number) => x * 2
+const subtractTen = (x: number) => x - 10
+ 
+const result = pipe(5, increment, double, subtractTen)
+// identical to subtractTen(double(increment(5)))
+ 
+console.log(result) // Output: 2</code></pre>
+
 
 notes:
 
 Just like method chaining, this makes it easy to view a left to right or top to bottom series of transformations while avoiding hard to read nested function calls.
 
 ---
-```ts
+<!-- ```ts
 Effect.map(myEffect, data => data + 1)
-```
+``` -->
+<pre>
+<code class="language-typescript">Effect.map(myEffect, data => data + 1)</code></pre>
+
 
 notes:
 In Effect you can use every function in two ways.
@@ -269,12 +350,18 @@ In Effect you can use every function in two ways.
 The first way is by passing the "data", or main input the function is acting on, as the first argument. This is most convenient when just calling a single function. 
 
 ---
-```ts
+<!-- ```ts
 pipe(
   myEffect,
   (effect) => Effect.map(effect, data => data+1)
 )
-```
+``` -->
+<pre>
+<code class="language-typescript">pipe(
+  myEffect,
+  (effect) => Effect.map(effect, data => data+1)
+)</code></pre>
+
 This is a bit annoying
 
 notes:
@@ -282,15 +369,25 @@ but if this was the only option, when using a pipeline youd have to use a anonym
 
 ---
 
-```ts
+<!-- ```ts
 Effect.map(data => data + 1)(myEffect)
-```
-```ts
+``` -->
+<pre>
+<code class="language-typescript">Effect.map(data => data + 1)(myEffect)</code></pre>
+
+
+<!-- ```ts
 pipe(
   myEffect,
   Effect.map(data => data+1)
 )
-```
+``` -->
+<pre>
+<code class="language-typescript">pipe(
+  myEffect,
+  Effect.map(data => data+1)
+)</code></pre>
+
 
 notes:
 This leads us to the second way to call functions. Leaving out the "data" from the original function call will cause it to return another function that takes the data as its only argument. This method is perfect for use in pipe lines when chaining multiple operations.

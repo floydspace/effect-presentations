@@ -11,7 +11,6 @@ code.language-typescript {
   line-height: 1.5em;
 }
 </style>
-<script src="./attachments/me.js"></script>
 
 ![[effect-logo.png]]
 
