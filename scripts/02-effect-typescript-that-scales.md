@@ -90,7 +90,7 @@ function processInput(input: string): void throws Error {
 }</code></pre>
 
 
-yea... this still sucks
+typed errors!... but still kinda sucks
 
 notes:
 a lot of people were upset about this outcome,
@@ -160,6 +160,15 @@ notes:
 
 Effect accomplishes this by bringing the best features of other languages, typed errors and managed side effects (along with a powerful ecosystem around them) to pure native typescript
 
+---
+
+```
+npm install effect
+```
+
+^ thats it
+
+notes:
 I say this in that Effect introduces zero new syntax. It requires no transpilation or compliation step. 
 you just npm install and run however you did before. This is important and intentional.
 
@@ -441,7 +450,7 @@ pipe(x, Foo.bar);</code></pre>
 Namespaced functions
 
 notes:
-The apis in Effect are seriously big. effect/io/Effect module has over 300 functions. In reality though you'll probably only use 10-20 consistently in most code. But what about all those other unused functions? If they were all under one class it would be impossible for a bundler to tree shake them.
+The apis in Effect are seriously big. effect/io/Effect  has over 300 functions. In reality though you'll probably only use 10-20 consistently in most code. But what about all those other unused functions? If they were all under one class it would be impossible for a bundler to tree shake them.
 
 ---
 Massive Bundle:
@@ -482,7 +491,7 @@ notes:
 
 Thats why Effect uses doesn't use methods. each effect module consists of many of top level functions, if you dont use one, your bundler will throw it away at build time.
 
-And if you want to make your own custom functions, you can easily. No prototype modification neccessary.
+This means when making your own custom functions, its easy. No prototype modification neccessary.
 
 And with pipe the code comes out looking pretty similar to a traditional chained method approach.
 
@@ -536,7 +545,7 @@ Effect.map(myEffect, data => data + 1)
 <pre>
 <code class="language-typescript">Effect.map(myEffect, data => data + 1)</code></pre>
 
-"data" as first arument
+"data" as first argument
 
 notes:
 In Effect you can use every function in two ways.
@@ -609,7 +618,7 @@ sum(2, 3) === 5
 pipe(2, sum(3)) === 5
 ``` -->
 <pre>
-<code class="language-typescript">import { pipe, Function } from 'effect';
+<code class="language-typescript" style="font-size:.8em">import { pipe, Function } from 'effect';
 
 const sum: {
   (that: number): (self: number) => number
