@@ -49,17 +49,20 @@ The Effect type is generic over 3 parameters which describe its behavior. Requir
 
 You should conceptualize an Effect as a function that takes in its requirements as an argument and returns either a value or an error.
 
-Its important to emphasize this function-like nature of an Effect. Just like a function, an Effect is only a description of its behavior when run. The output value is yielded only when the Effect is ran.
+Its important to emphasize this function-like nature of an Effect. Just like creating a function doesn't execute it's body, also constructing an effect doesn't execute it's content, we could say that an effect is a description of a program. The output value is computed only when the Effect is ran.
 
 ---
 
 The unit `Effect`
 ```ts
 type Unit = Effect<never, never, void>;
+
+// can think of being like
+const unit = (): void => {}
 ```
 
 notes:
-The unit effect is the most basic Effect type. It describes a program that has requirements of type never, meaning it does not have any dependencies. It has a error also of type never, meaning it will never error, and it has a value of type void, meaning it does not return anything.
+The unit effect is the most basic Effect type. It describes a program that has requirements of type never, meaning it does not have any dependencies. It has a error also of type never, meaning it will never error, and it has a value of type void, meaning it does not return anything meaningful.
 
 ---
 
@@ -283,7 +286,8 @@ Transforming the value of an effect with map
 // type: Effect<never, never, string>
 const mappedEffect = pipe(
   Effect.succeed(1),
-  Effect.map((x: number) => String(x))
+  // "x" type: number
+  Effect.map((x) => String(x))
 )
  
 console.log(Effect.runSync(mappedEffect)) // Output: "1"
@@ -359,8 +363,8 @@ To do this we can use flatMap. flatMap takes a function that takes an input of t
 ---
 
 ```ts
-// returns: Effect<never, never, number>
-const getNumber = () => Effect.succeed(Math.random() * 10);
+// type: Effect<never, never, number>
+const getNumber = Effect.sync(() => Math.random() * 10);
 
 // returns: Effect<never, Error, number>
 const checkIfAtLeastFive = (x: number) =>
@@ -410,7 +414,7 @@ const program = pipe(
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
-  Effect.flatMap(checkIfAtLeastFive),
+  Effect.flatMap((x) => checkIfAtLeastFive(x)),
   // Effect<never, Error, number>
 )
 ```
@@ -424,9 +428,9 @@ const program = pipe(
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
-  Effect.flatMap(checkIfAtLeastFive),
+  Effect.flatMap((x) => checkIfAtLeastFive(x)),
   // Effect<never, Error, number>
-  Effect.flatMap(logNumber)
+  Effect.flatMap((x) => logNumber(x))
   // Effect<never, Error, void>
 );
 ```
@@ -441,8 +445,8 @@ the value was consumed by logNumber
 ```ts
 pipe(
 	Effect.succeed(5),
-	Effect.flatMap(logNumber),
-	Effect.map(x => x + 1)
+	Effect.flatMap((x) => logNumber(x)),
+	Effect.map((x) => x + 1)
 	// ^ ERROR: 
 	// '+' cannot be applied to types 'void' and 'number'.
 )
@@ -457,8 +461,8 @@ Execute side effects with tap
 ```ts
 const program = pipe(
 	Effect.succeed(5),
-	Effect.tap(logNumber),
-	Effect.map(x => x + 1)
+	Effect.tap((x) => logNumber(x)),
+	Effect.map((x) => x + 1)
 )
 
 Effect.runSync(program); // 6
@@ -557,7 +561,7 @@ const getPokemon = (id: number) =>
     Effect.tryPromise(() =>
       fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
     ),
-    Effect.flatMap(parsePokemon)
+    Effect.flatMap((x) => parsePokemon(x))
   );
 ```
 
@@ -568,7 +572,11 @@ We can pass the result of the fetch + json Effect to the parsePokemon function c
 
 ```ts
 const getRandomNumberArray = (length: number) =>
-  Array.from({ length }, () => Math.floor(Math.random() * 100) + 1);
+  Effect.all(
+    Array.from({ length }, () =>
+      Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+    )
+  );
 ```
 
 notes:
@@ -696,14 +704,14 @@ and running it does what we expect
 like async await but for effect
 
 notes:
-Now were going to talk about Effect generators, a wait to write your effects in a more familiar way if pipe is a little too different for you. Just like async await allows us to write asynchronous code in a synchronous looking way, generators allow us to write effectful code in the same familiar manner.
+Now were going to talk about Effect generators, a way to write your effects in a more familiar way if pipe is a little too different for you. Just like async await allows us to write asynchronous code in a synchronous looking way, generators allow us to write effectful code in the same familiar manner.
 
 ---
 
 ```ts
 declare const imAnEffect: Effect<never, Error, number>;
 
-// type: Effect<Effect<never, Error, string>
+// type: Effect<never, Error, string>
 const program = Effect.gen(function* (_) {
 	// type: number
 	const valueOfEffect = yield* _(imAnEffect);
@@ -1185,27 +1193,29 @@ Effect provides this behavior through the Requirements field of the Effect type 
 
 ---
 ```ts
-type Random = {
-  readonly next: () => Effect.Effect<never, never, number>
+interface Random {
+  readonly _tag: "Random"
+  readonly next: Effect.Effect<never, never, number>
 }
 ```
 
 notes:
-first we'll define the type signature of our dependency. Here it will be an object will one method called next that returns a Effect never never number
+first we'll define the type signature of our dependency. Here it will be an object with a unique tag and one other property, next, that is a Effect never never number. Next is noticeably not a method, because effects are lazily evaluated, every time next is run a new number will be yielded.
 
 ---
 ```ts
 import { Effect, Context } from "effect"
 
-type Random = {
-  readonly next: () => Effect.Effect<never, never, number>
+interface Random {
+  readonly _tag: "Random"
+  readonly next: Effect.Effect<never, never, number>
 }
 
-const Random = Context.Tag<Random>()
+const Random = Context.Tag<Random>("@app/Random")
 ```
 
 notes:
-Next we'll import the context namespace from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of the type passed as the generic.
+Next we'll import the context module from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of the type passed as the generic.
 
 ---
 ```ts
@@ -1242,7 +1252,7 @@ If we try to run a program with a requirements field that is not 'never' we get 
 const runnable = program.pipe(
   Effect.provideService(
     Random,
-    Random.of({ next: () => Effect.succeed(Math.random()) })
+    Random.of({ next: Effect.sync(() => Math.random()) })
   )
 );
 
@@ -1388,7 +1398,7 @@ timestamp=2023-07-25T04:33:07.743Z level=DEBUG fiber=#2 message=debug
 ```
 
 notes:
-Using the withMinimumLogLevel function from the Logger namespace we can manually adjust this setting. In this case we can lower it to now show debug logs, but if you only set a higher minimum level you can as well.
+Using the withMinimumLogLevel function from the Logger module we can manually adjust this setting. In this case we can lower it to now show debug logs, but if you only set a higher minimum level you can as well.
 
 ---
 
