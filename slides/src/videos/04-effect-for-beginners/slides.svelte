@@ -1867,4 +1867,235 @@
 			</Code>
 		</Layout>
 	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Effects</h1>
+			<div class="text-left space-y-5">
+				<Step><li>the description of a program</li></Step>
+				<Step><li>may have some requirements</li></Step>
+				<Step><li>yields a value or an error when run</li></Step>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Creating Effects</h1>
+			<div class="text-left space-y-5">
+				<Step><li>From a value: <i>succeed</i> and <i>fail</i></li></Step>
+				<Step><li>From a function (or side effects)</li></Step>
+				<Step>
+					<div class="ml-20">
+						<li>
+							<b>Synchronous</b>: <i>sync</i> and <i>try</i> for catching errors
+						</li>
+					</div>
+				</Step>
+				<Step>
+					<div class="ml-16">
+						<li>
+							<b>Asynchronous</b>: <i>promise</i> and <i>tryPromise</i> for handling
+							rejections
+						</li>
+					</div>
+				</Step>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Running Effects</h1>
+			<div class="text-left space-y-5">
+				<Step><li>(for <i>{'Effect<R, E, A>'}</i>)</li></Step>
+				<Step><li>Synchronous: <i>runSync</i></li></Step>
+				<Step
+					><div class="ml-20">
+						<li>
+							returns <i>A</i> or throws <i>E</i>
+						</li>
+					</div></Step
+				>
+				<Step
+					><div class="ml-20">
+						<li>throws if anything async</li>
+					</div></Step
+				>
+				<Step><li>Asynchronous: <i>runPromise</i></li></Step>
+				<Step
+					><div class="ml-20">
+						<li>
+							returns <i>{'Promise<A>'}</i> that may reject with <i>E</i>
+						</li>
+					</div></Step
+				>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Pipelines</h1>
+			<div class="text-left space-y-5">
+				<Step><li>Apply successive transformations with <i>pipe</i></li></Step>
+				<Step><li>Modify the value with <i>map</i></li></Step>
+				<Step
+					><li>
+						Modify the value or introduce errors with <i>flatMap</i>
+					</li></Step
+				>
+				<Step><li>Use the value but ignore the result with <i>tap</i></li></Step
+				>
+				<Step
+					><li>Combine the value of multiple effects with <i>all</i></li></Step
+				>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Generators</h1>
+			<div class="text-left space-y-5">
+				<Step><li>alternative syntax similar to async/await</li></Step>
+				<Step><li>completely optional</li></Step>
+				<Step
+					><li>
+						<i>{'Effect.gen(function* (_) { yield* _(effect); }'}</i>
+					</li></Step
+				>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Error Handling</h1>
+			<div class="text-left space-y-5">
+				<Step><li>Errors "short circuit" normal execution immediately</li></Step
+				>
+				<Step
+					><li>
+						"<i>readonly _tag: string</i>" field to discriminate types
+					</li></Step
+				>
+				<Step><li>Catching errors</li></Step>
+				<Step
+					><div class="ml-20">
+						<li>
+							All errors: <i>catchAll</i>
+						</li>
+					</div></Step
+				>
+				<Step
+					><div class="ml-20">
+						<li>Specific error: <i>catchTag</i></li>
+					</div></Step
+				>
+				<Step
+					><div class="ml-20">
+						<li>Multiple specific errors: <i>catchTags</i></li>
+					</div></Step
+				>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Adding Requirements</h1>
+			<div class="text-left space-y-5">
+				<Step><li>(for <i>{'Effect<R, E, A>'}</i>)</li></Step>
+				<Step
+					><li>
+						<i>{'Context.Tag<T>'}</i> creates a placeholder that we can use in
+						our pipelines and adds <i>T</i> to the <i>R</i> field of the Effect
+					</li></Step
+				>
+				<Step
+					><li>
+						An Effect whose <i>R</i> isn't <i>never</i> cannot be run
+					</li></Step
+				>
+				<Step><li><i>Effect.provideService</i> fills that placeholder</li></Step
+				>
+				<Step><li>can be done anywhere before the effect is run</li></Step>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl font-bold">Logging</h1>
+			<div class="text-left space-y-5">
+				<Step><li><i>Effect.log*</i></li></Step>
+				<Step
+					><div class="ml-20">
+						<li>Debug, Info, Warning, Error, Fatal</li>
+					</div></Step
+				>
+				<Step
+					><div class="ml-20">
+						<li>The minimum log level can be modified</li>
+					</div></Step
+				>
+				<Step><li><i>Effect.withLogSpan</i> for timing things</li></Step>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-7xl font-bold">Effect is really big</h1>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-5xl font-bold">Additional Resources</h1>
+			<div class="text-left space-y-5 text-md">
+				<Step
+					><li>Effect Docs</li>
+					<div class="ml-20 text-base">
+						<li>
+							This video has a lot of overlap with the "Effect Essentials"
+							sections
+						</li>
+					</div></Step
+				>
+				<Step
+					><li>Effect API Reference</li>
+					<div class="ml-20 text-base">
+						<li>
+							The type signatures can look a bit scary, but don't be afraid to
+							look something up in here
+						</li>
+					</div></Step
+				>
+				<Step
+					><li>Effect Discord</li>
+					<div class="ml-20 text-base">
+						<li>Dedicated beginner channels to help you!</li>
+					</div></Step
+				>
+				<Step
+					><li>Github repo containing the code in this video</li>
+					<div class="ml-20 text-base">
+						<li>Insert link to the Github repository here.</li>
+					</div></Step
+				>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="typescript" lines={false}>
+				{`
+					  console.log("till next time")
+					`}
+			</Code>
+		</Layout>
+	</Slide>
 </Presentation>
