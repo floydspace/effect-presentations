@@ -926,9 +926,173 @@
 				  yield* _(Effect.log("\\n" + pokemons.map(formatPokemon).join("\\n")));
 				  
 				  const heaviest = yield* _(calculateHeaviestPokemon(pokemons));
-				  yield* _(Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`));
+				  yield* _(
+						Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`)
+					);
 				});
 		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="font-bold text-8xl">Error Handling</h1>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+					type Effect<Requirements, Error, Value> = (
+						requirements: Requirements
+					) => Error | Value;
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+					Effect.fail(new Error("two pokemon have the same weight!"))
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|2,6">
+				{`
+					type DivideByZeroError = {
+						readonly _tag: "DivideByZeroError"
+					}
+
+					type HttpError = {
+						readonly _tag: "HttpError",
+						readonly statusCode: number;
+					}
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+					class DivideByZeroError {
+						readonly _tag = "DivideByZeroError"
+					}
+
+					class HttpError {
+						readonly _tag = "HttpError"
+						constructor(readonly statusCode: number) {}
+					}
+
+					Effect.fail(new DivideByZeroError());
+					Effect.fail(new HttpError(404));
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Catching Errors</h1>
+			<Code lang="ts" lines="1,3">
+				{`
+					declare const mayError: Effect.Effect<
+						never,
+						DivideByZeroError | HttpError,
+						string
+					>;
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Catching All Errors</h1>
+			<Code lang="ts" lines="3-5|1">
+				{`
+					// type: Effect<never, never, string>
+					const caughtAll = mayError.pipe(
+						// "error" type: DivideByZeroError | HttpError
+						Effect.catchAll((error) =>
+							Effect.succeed(\`Recovering from any Error (\${error._tag})\`)
+						)
+					);
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Catching Specific Errors</h1>
+			<Code lang="ts">
+				{`
+					// type: Effect<never, DivideByZeroError, string>
+					const caughtTag = mayError.pipe(
+						// "e" type: HttpError
+						Effect.catchTag("HttpError", (httpError) =>
+							Effect.succeed(
+								\`recovering from httpError with status: \${httpError.statusCode}\`
+							)
+						)
+					);
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Catching multiple Specific Errors</h1>
+			<Code lang="ts">
+				{`
+					// type: Effect<never, never, string>
+					const caughtTags = mayError.pipe(
+						Effect.catchTags({
+							HttpError: (httpError) =>
+								Effect.succeed(
+									\`recovering from httpError with status: \${httpError.statusCode}\`
+								),
+							DivideByZeroError: () =>
+								Effect.succeed("recovering from divideByZeroError"),
+						})
+					);
+		    `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Short Circuiting</h1>
+			<Code lang="ts" lines="|2|3,12-15">
+				{`
+					const operation1 = Effect.sync(() => console.log("operation1"))
+					const operation2 = Effect.fail(new Error("Something went wrong!"))
+					const operation3 = Effect.sync(() => console.log("operation3"))
+
+					Effect.runSync(
+						operation1.pipe(
+							Effect.flatMap(() => operation2),
+							Effect.flatMap(() => operation3) 
+							// This ^^ computation won't be executed because the previous one fails
+						)
+					)
+					/* console:
+					operation1
+					<UNCAUGHT ERROR>...
+					*/
+		    `}
 			</Code>
 		</Layout>
 	</Slide>
