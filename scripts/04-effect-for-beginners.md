@@ -39,7 +39,7 @@ with that out of the way lets get to business
 ```ts
 type Effect<Requirements, Error, Value> = (
   requirements: Requirements
-) => Value| Error;
+) => Error | Value;
 ```
 
 notes:
@@ -49,7 +49,7 @@ The Effect type is generic over 3 parameters which describe its behavior. Requir
 
 You should conceptualize an Effect as a function that takes in its requirements as an argument and returns either a value or an error.
 
-Its important to emphasize this function-like nature of an Effect. Just like creating a function doesn't execute it's body, also constructing an effect doesn't execute it's content, we could say that an effect is a description of a program. The output value is computed only when the Effect is ran.
+Its important to emphasize this function-like nature of an Effect. Just like creating a function doesn't execute it's body, constructing an effect doesn't execute it's content, we could say that an effect is a description of a program. The output value is computed only when the Effect is ran.
 
 ---
 
@@ -58,11 +58,11 @@ The unit `Effect`
 type Unit = Effect<never, never, void>;
 
 // can think of being like
-const unit = (): void => {}
+const unit = () => {}
 ```
 
 notes:
-The unit effect is the most basic Effect type. It describes a program that has requirements of type never, meaning it does not have any dependencies. It has a error also of type never, meaning it will never error, and it has a value of type void, meaning it does not return anything meaningful.
+The unit effect is the most basic Effect type. It describes a program that has requirements of type never, meaning it does not have any dependencies. It has a error also of type never, meaning it will never error, and it has a value of type void, meaning it does not return any value.
 
 ---
 
@@ -72,7 +72,7 @@ type Simple = Effect<never, Error, number>;
 ```
 
 notes:
-Lets break down this effect. Like the unit effect, its requirements field is never, meaning it does not have any dependencies. Unlike the unit effect, its Error type is Error, this means that this Effect may fail with an Error object. The final value type is number, meaning this Effect will yield a number if it succeeds.
+Lets break down this effect. Like the unit effect, its requirements field is never. However, unlike the unit effect, its Error type is Error, this means that this Effect may fail with an Error object. The final value type is number, meaning this Effect will yield a number if it succeeds.
 
 ---
 
@@ -102,7 +102,7 @@ function divide(x: number, y: number): Effect.Effect<never, Error, number> {
 notes:
 The power of the Effect type comes from its ability to compose together with other Effects. Here is a basic division function. First it checks if the divisor is 0, and if so returns a effect failure containing an Error. Else it returns a effect success containing the result of the division.
 
-In the return type is where the magic happens. See how both the success case and the failure case merge into a single type that describes both outcomes. It is now abundantly clear that a result of this divide function either returns a number or an Error.
+In the return type is where the magic happens. See how both the success case and the failure case merge into a single type that describes both outcomes. It is now abundantly clear that a result of this divide function is an effect that when run will yield either a number or an Error.
 
 ---
 
@@ -134,16 +134,19 @@ Its important to note that sync always returns an Effect with a error of type ne
 ---
 A synchronous computations that could throw
 ```ts
-// type: Effect<never, unknown, any>
-const program = Effect.try(
-  () => JSON.parse("")
-)
+// type: Effect<never, Error, any>
+const program = Effect.try({
+  try: () => JSON.parse(""),
+  catch: (_caughtError) => new Error("JSON.parse threw an error"),
+});
 ```
 
 notes:
-Most non Effect code will throw errors, and thats ok. The try constructor catches any errors thrown from the passed function and feeds them to the Error channel of the resulting effect as unknown.
+However, non Effect code will throw errors, and thats ok. The try constructor catches errors thrown from the passed try function and passes them to a catch function where you can construct the value to place in the error channel of the resulting effect.
 
-Here JSON.parse will throw if the input is invalid json, such as this empty string. Like sync, the resulting effect has a value of the return type of the passed function, in this case any.
+Here JSON.parse will throw if the input is invalid json, such as this empty string. If so we create a new error with a custom message.
+
+Like sync, the resulting effect has a value of the return type of the passed try function, in this case any, and the error is of type Error, the return type of our catch function. 
 
 ---
 
@@ -154,7 +157,7 @@ const promise = Effect.promise(() => Promise.resolve(42));
 ```
 
 notes:
-To model a asynchronous computation we can use the promise constructor. Notice how the resulting Effect returns a number and not a Promise of a number. This is because Effect handles the asynchronous aspect for you, so you only have to worry about the resulting type.
+To model an asynchronous computation we can use the promise constructor. Notice how the resulting Effect returns a number and not a Promise of a number. This is because Effect handles the asynchronous aspect for you, so you only have to worry about the resulting type.
 
 Just like with `sync` its crucial that the promise returned from the function passed to the promise constructor **never** rejects.
 
@@ -162,11 +165,14 @@ Just like with `sync` its crucial that the promise returned from the function pa
 
 ```ts
 // type: Effect<never, unknown, Response>
-const response = Effect.tryPromise(() => fetch("..."));
+const response = Effect.tryPromise({
+  try: () => fetch("..."),
+  catch: (_caughtError) => new Error("fetch rejected"),
+});
 ```
 
 notes:
-If it might, just like the synchronous version try, we can use tryPromise to send any rejections to the error channel as unknown.
+If it might, just like the synchronous version try, we can use tryPromise to handle rejected promises with a catch function
 
 ---
 
@@ -195,7 +201,7 @@ console.log(result);
 ```
 
 notes:
-To run an Effect synchronously we can use the `runSync` function. This will run our effect, triggering any side effects and returning the value type of the ran effect.
+To run an Effect synchronously we can use the `runSync` function. This will run our effect, triggering any side effects and returning the a value of the value type of the ran effect.
 
 If the effect fails, or if any asynchronous tasks are performed the `runSync` function will throw an Error.
 
@@ -257,7 +263,7 @@ console.log(result) // Output: 2
 ```
 
 notes:
-Here we have 3 functions which each take and return a number. Using pipe we apply them one at a time, feeding the output of one as the input to the next and ending up with out final result. 
+Here we have 3 functions which each take and return a number. Using pipe we apply them one at a time, feeding the output of one as the input to the next and ending up with our final result. 
 
 Pipe allows us to use functions in a clear left to right or top to down order instead of confusing deeply nested function calls.
 
@@ -277,7 +283,7 @@ These are identical
 
 notes:
 
-For convenience the Effect type also has a pipe method which is identical to passing the effect as the first argument to the pipe function, but looks a bit cleaner. I'll use these interchangeable through the examples in this video, just know they are the same and you can use whichever way works best for you.
+For convenience the Effect type also has a pipe method which is identical to passing the effect as the first argument to the pipe function, but can look a bit cleaner. I'll mainly use the pipe function through the examples in this video, just know both the pipe function and the pipe method are the same and you can use whichever way works best for you.
 
 ---
 
@@ -294,7 +300,7 @@ console.log(Effect.runSync(mappedEffect)) // Output: "1"
 ```
 
 notes:
-the map function is simple, it applies the function passed to it to the value inside an effect, and returns a new effect with the value as the output of that function.
+the map function is simple, it applies the function passed to it to the value inside an effect, and returns a new effect with whose value as the output of that function.
 
 In this example the function passed to map takes in a number, in this case the 1 value from the previous effect, and converts it to a string. When we log the result after running the effect and see the output is a string 1
 
@@ -303,13 +309,13 @@ In this example the function passed to map takes in a number, in this case the 1
 const mappedEffect = pipe(
   Effect.succeed({ x: 5, y: 0 }),
   Effect.map(({x, y}: { x: number, y: number }) =>
-	y === 0 ? Effect.fail(new Error()) : Effect.succeed(x/y)
+	y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
   )
 )
 ```
 
 notes:
-Lets recreate our divide function from earlier, but this time with the input as a single object so it can be the singular value of an effect. Just like earlier our mapping function will either error with an Error or succeed with a number.
+Lets recreate our divide function from earlier, but this time with the input as a single object so it can be the singular value of an effect. Just like earlier, our mapping function will either error with an Error or succeed with a number.
 
 ---
 
@@ -319,7 +325,7 @@ This isn't right
 const mappedEffect = pipe(
   Effect.succeed({ x: 5, y: 0 }),
   Effect.map(({x, y}: { x: number, y: number }) =>
-	y === 0 ? Effect.fail(new Error()) : Effect.succeed(x/y)
+	y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
   )
 )
 ```
@@ -352,19 +358,19 @@ Effectful transformations with flatMap
 const flatMappedEffect = pipe(
   Effect.succeed({ x: 5, y: 0 }),
   Effect.flatMap(({x, y}: { x: number, y: number }) =>
-	y === 0 ? Effect.fail(new Error()) : Effect.succeed(x/y)
+	y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
   )
 )
 ```
 
 notes:
-To do this we can use flatMap. flatMap takes a function that takes an input of the type of the value of the previous Effect and returns a new Effect. The result of the flat map will be a new Effect whose value is the value of the new Effect, and whos error and requirements are a combination of the old and new Effects.
+To do this we can use flatMap. flatMap takes a function that accepts an input whose type is the value of the previous Effect and returns a new Effect. The result of the flat map will be a new Effect whose value is the value of the returned Effect, and whos error and requirements are a combination of the old and new Effects.
 
 ---
 
 ```ts
 // type: Effect<never, never, number>
-const getNumber = Effect.sync(() => Math.random() * 10);
+const getRandomNumber = Effect.sync(() => Math.random() * 10);
 
 // returns: Effect<never, Error, number>
 const checkIfAtLeastFive = (x: number) =>
@@ -373,44 +379,66 @@ const checkIfAtLeastFive = (x: number) =>
     Effect.fail(new Error("number is less than 5"));
 
 // returns: Effect<never, never, void>
-const logNumber = (x: number) => Effect.sync(() => console.log(x));
+const logNumber = (x: number) => Effect.log(x.toString());
 ```
 
 notes:
-Lets take a look at a short example using what we've learned so far. To start we'll define three functions. 
+Lets take a look at a short example using what we've learned so far. To start we'll define three values.
 
-The first, getNumber returns a effect that always succeeds with a random number between 1-10.
+The first, getRandomNumber returns a effect that always succeeds with a random number between 1-10. We use Effect.sync and not Effect.succeed because the generation of a random number is a side effect.
 
-The second function, returns an Effect that fails with type Error if the number is less than 5, or succeeds with the passed number if its greater than 5.
+next, checkIfAtLeastFive is a function that returns an Effect that fails with type Error if the number is less than 5, or succeeds with the passed number if its greater than 5.
 
-Finally, logNumber logs the number to the console and returns a Effect representing that side effect.
+Finally, logNumber uses Effect.log to create an effect that represents the logging of the value to the console. We'll talk more about logging later in the video.
 
 ---
 ```ts [2-3]
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
 )
 ```
 notes:
-our program will start will a call to getNumber to get a new random number
+our program will start will the getRandomNumber Effect. It may feel strange to see the generation of a random number as a value not a function, you would think using a value would just represent a single generated number
+
+---
+Normal Typescript
+```ts
+const getRandomNumber = Math.random() * 10;
+getRandomNumber // 6.687255774479639
+getRandomNumber // 6.687255774479639
+getRandomNumber // 6.687255774479639
+```
+
+Effect
+```ts
+// type: Effect<never, never, number>
+const getRandomNumber = Effect.sync(() => Math.random() * 10);
+
+Effect.runSync(getRandomNumber) // 5.302813847147179
+Effect.runSync(getRandomNumber) // 6.935519254857123
+Effect.runSync(getRandomNumber) // 3.2272729578006554
+```
+
+notes:
+But remember this value is an Effect which represents the computation of this random number, which is lazily evaluated. This means the same effect value can be used in multiple places, as it triggers the internal side effect each time it is run.
 
 ---
 ```ts [4-5]
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
 )
 ```
 notes:
-Then we'll apply a map function that multiplies the number by 2.
+next, we'll apply a map function that multiplies the number by 2.
 
 ---
 ```ts [6-7]
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
@@ -419,12 +447,12 @@ const program = pipe(
 )
 ```
 notes:
-Then we'll flatMap with the check if at least 5 function. Notice that the value of our program now contains the error from that function.
+Then we'll flatMap with the check if at least 5 function. Notice that the type of our program now contains the error from that function.
 
 ---
 ```ts [8-9]
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
@@ -490,7 +518,7 @@ console.log(Effect.runSync(combinedEffect))
 notes:
 So far we've only been working with single values, but what about transforming the results of multiple Effects.
 
-For this we can use all. All takes an array of effects and returns an Effect whose value is a tuple of the value types of the passed effects.
+For this we can use all. All takes an array of effects and returns an Effect whose value is a tuple of the values of the passed effects.
 
 Here in this example, we merge foo and bar to a single effect then run and log it.
 
@@ -516,11 +544,13 @@ It will simple but naïve and we'll add robustness bit by bit.
 
 ---
 ```ts
-// type: Effect<never, unknown, any>
+// type: Effect<never, Error, any>
 const getPokemon = (id: number) =>
-  Effect.tryPromise(() =>
-    fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
-  );
+  Effect.tryPromise({
+	    try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+				.then((res) => res.json()),
+		catch: (e) => new Error("error fetching pokemon: ${e.message}")
+    }),
 ```
 
 notes:
@@ -555,54 +585,74 @@ Be sure to check out the schema github readme for more information and look out 
 ---
 validation!
 ```ts
-// returns: Effect<never, unknown, Pokemon>
+// returns: Effect<never, Error | ParseError, Pokemon>
 const getPokemon = (id: number) =>
   pipe(
-    Effect.tryPromise(() =>
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
-    ),
+    Effect.tryPromise({
+	    try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+				.then((res) => res.json()),
+		catch: (e) => new Error("error fetching pokemon: ${e.message}")
+    }),
     Effect.flatMap((x) => parsePokemon(x))
   );
 ```
 
 notes:
-We can pass the result of the fetch + json Effect to the parsePokemon function combined with flat map to validate it. Now we can see the return type contains a Pokemon.
+We can pass the result of the fetch + json Effect to the parsePokemon function combined with flat map to validate it. Now we can see the returned effect contains a Pokemon, as well as a potential parsing error being added to the error channel
 
 ---
 
 ```ts
-const getRandomNumberArray = (length: number) =>
-  Effect.all(
-    Array.from({ length }, () =>
-      Effect.sync(() => Math.floor(Math.random() * 100) + 1)
-    )
-  );
+// type: Effect<never, never, number>[]
+const getRandomNumberArray = 
+	Array.from({ length: 10 }, () =>
+	    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+	)
 ```
 
 notes:
-next, our random array function, it will generate a array of random numbers between 1 and 101 based on a given length
+next, our random array function, it will generate a array of 10 random numbers between 1 and 101. First we fill the array with an effect to generate a number.
 
 ---
-
 ```ts
-// type: Effect<never, unknown, Pokemon>[]
-const pokemonArray = getRandomNumberArray(10).map(getPokemon)
+// type: Effect<never, never, number[]>
+const getRandomNumberArray = Effect.all(
+	Array.from({ length: 10 }, () =>
+	    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+	)
+)
 ```
 
 notes:
-We can create an array and map over it with our get Pokémon function to create an array of Effects
+Then we use Effect.all to convert the array of effects to a single effect with an array of numbers
 
 ---
 
 ```ts
-const program = Effect.all(getRandomNumberArray(10).map(getPokemon));
+// type: Effect<never, Error, Pokemon[]>
+const program = pipe(
+	getRandomNumberArray,
+	Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
+)
+```
+
+notes:
+Now we can start our program as a pipeline beginning with the random number array effect. Then we take that array and map it with our get pokemon function, this returns an array of effects so we once again use Effect.all to end up with a single effect containing an array of pokemon
+
+---
+
+```ts
+// type: Effect<never, Error, Pokemon[]>
+const program = pipe(
+	getRandomNumberArray,
+	Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
+)
 
 Effect.runPromise(program).then(console.log)
 ```
 
 notes:
-With an array of Effects we can use Effect.all to get all of the values as a tuple.
-Then using runPromise we can run the program to trigger all the Effects and return that tuple.
+Then using runPromise we can run the program to trigger all the Effects and return the pokemon array to log to the console
 
 ---
 
@@ -622,7 +672,7 @@ Then using runPromise we can run the program to trigger all the Effects and retu
 ```
 
 notes:
-and assuming none of the fetch or validation operations failed we will see all of the data printed to the console.
+After running our code, assuming none of the fetch or validation operations failed we will see all of the data printed out
 
 ---
 
@@ -631,15 +681,16 @@ const formatPokemon = (pokemon: Pokemon) =>
   `${pokemon.name} weighs ${pokemon.weight} hectograms`;
 
 const program = pipe(
-  Effect.all(getRandomNumberArray(10).map(getPokemon)),
+  getRandomNumberArray,
+  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
   Effect.tap((pokemons) =>
-    Effect.sync(() => console.log(pokemons.map(formatPokemon).join("\n")))
+    Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
   ),
 );
 ```
 
 notes:
-Then to clean things up a bit we'll add a format pokemon function and use tap to do this logging within our program.
+Then to clean things up a bit we'll add a simple format pokemon function to map our pokemon array with, and use Effect.log combined with Effect.tap to trigger this side effect.
 
 ---
 
@@ -654,7 +705,7 @@ const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
 ```
 
 notes:
-To calculate the heaviest pokemon well create a new function takes an array of pokemon and uses Effect.reduce, which is like the normal array reduce but the reducing function returns an effect allow for error handling
+To calculate the heaviest pokemon well create a new function takes an array of pokemon and uses Effect.reduce, which is like the normal array.reduce but where the reducing function returns an effect allowing for error handling
 
 In this case if two pokemon have the same weight we will consider that an error and return a effect failure containing an error.
 
@@ -663,36 +714,42 @@ In this case if two pokemon have the same weight we will consider that an error 
 ```ts [6-9]
 // type: Effect<never, unknown, void>
 const program = pipe(
-  Effect.all(getRandomNumberArray(10).map(getPokemon)),
+  getRandomNumberArray,
+  // Effect<never, Error, number[]>
+  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
+  // Effect<never, Error, Pokemon[]>
   Effect.tap((pokemons) =>
-    Effect.sync(() => console.log(pokemons.map(formatPokemon).join("\n"), "\n"))
+    Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
   ),
-  Effect.flatMap(calculateHeaviestPokemon),
-  Effect.map((heaviest) =>
-    console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+  // Effect<never, Error, Pokemon[]>
+  Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
+  // Effect<never, Error, number>
+  Effect.flatMap((heaviest) =>
+    Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
   )
+  // Effect<never, Error, void>
 );
 ```
 
 notes:
-Then we can add this to the end of our program, flat mapping with our calculate heaviest pokemon function and logging out the result.
+Then we can add this to the end of our program, flat mapping with our calculate heaviest pokemon function and logging out the result, this time with flatMap instead of tap as its fine to consume the number as this is the final part of our program.
 
-The final type of our program is Effect never unknown void meaning it takes no requirements, may error with some unknown type value, and returns nothing on success.
+The type of our entire program is Effect never unknown void meaning it takes no requirements, may error with some Error object, and returns no value on success.
 
 ---
 ```
-nidoran-f weighs 70 hectograms
-zubat weighs 75 hectograms
-gengar weighs 405 hectograms
-abra weighs 195 hectograms
-pikachu weighs 60 hectograms
-bulbasaur weighs 69 hectograms
-growlithe weighs 190 hectograms
-pikachu weighs 60 hectograms
-oddish weighs 54 hectograms
+timestamp=2023-... level=INFO fiber=#0 message="
+hypno weighs 756 hectograms
+raichu weighs 300 hectograms
+krabby weighs 65 hectograms
+charmander weighs 85 hectograms
+farfetchd weighs 150 hectograms
+slowpoke weighs 360 hectograms
 tentacruel weighs 550 hectograms
-
-The heaviest pokemon weighs 550 hectograms!
+golbat weighs 550 hectograms
+paras weighs 54 hectograms
+zubat weighs 75 hectograms"
+timestamp=2023-... level=INFO fiber=#0 message="The heaviest pokemon weighs 756 hectograms!"
 ```
 
 notes:
@@ -704,7 +761,7 @@ and running it does what we expect
 like async await but for effect
 
 notes:
-Now were going to talk about Effect generators, a way to write your effects in a more familiar way if pipe is a little too different for you. Just like async await allows us to write asynchronous code in a synchronous looking way, generators allow us to write effectful code in the same familiar manner.
+Now were going to talk about Effect generators, a optional way to write your effects in a more familiar way. Just like async await allows us to write asynchronous code in a synchronous looking way, generators allow us to write effectful code in the same familiar manner.
 
 ---
 
@@ -722,7 +779,7 @@ const program = Effect.gen(function* (_) {
 notes:
 Using generators looks like this. First pass a generator (the function*) to the Effect.gen function. This generator takes one argument called an adapter, which the common convention is to alias with an underscore. 
 
-Whenever we want to extract the value of an effect for use in our funciton, all you need to use is `yield* adapter`. This will automatically propagate any errors or requirements from that effect to the effect returned by effect.gen
+Whenever we want to extract the value of an effect for use in our funciton, all you need to use is `yield* adapter`. This evaluates to the value within the effect, while automatically propagate any errors or requirements from that effect to the effect returned by effect.gen
 
 other than that just write your logic just as you normal would and return the result.
 
@@ -730,13 +787,13 @@ other than that just write your logic just as you normal would and return the re
 
 ```ts
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
-  Effect.flatMap(checkIfAtLeastFive),
+  Effect.flatMap((x) => checkIfAtLeastFive(x)),
   // Effect<never, Error, number>
-  Effect.flatMap(logNumber)
+  Effect.flatMap((x) => logNumber(x))
   // Effect<never, Error, void>
 );
 ```
@@ -750,7 +807,7 @@ lets convert it from using pipe to using generators
 ```ts
 // type: Effect<never, Error, void>
 const after = Effect.gen(function* (_) {
-	const x = yield* _(getNumber());
+	const x = yield* _(getRandomNumber);
 	const y = x * 2;
 	const z = yield* _(checkIfAtLeastFive(y));
 	yield* _(logNumber(z));
@@ -758,7 +815,7 @@ const after = Effect.gen(function* (_) {
 ```
 
 notes:
-Now we can assign values to variables and manipulate them just like normal. Previously where we used flatMap now we use the yield* adapter pattern, and normal maps just become regular code.
+Now we can assign values to variables and manipulate them just like normal. Previously where we used Effect.flatMap now we use the yield* adapter pattern, and Effect.map just become regular code.
 
 ---
 
@@ -775,14 +832,16 @@ now lets see what it would look like to use generators in our pokemon program wh
 // type: Effect<never, unknown, Pokemon>
 const getPokemon = (id: number) =>
   Effect.gen(function* (_) {
-    const response = yield* _(
-      Effect.tryPromise(() =>
-        fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
-          res.json()
-        )
-      )
+    const res = yield* _(
+      Effect.tryPromise({
+        try: () =>
+          fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
+            res.json()
+          ),
+        catch: () => new Error("error fetching pokemon"),
+      })
     );
-    return yield* _(parsePokemon(response));
+    return yield* _(parsePokemon(res));
   });
 ```
 
@@ -794,19 +853,17 @@ our new get pokemon function looks like this. We yield the value from our fetch 
 ```ts
 // type: Effect<never, unknown, void>
 const program = Effect.gen(function* (_) {
-  const pokemons = yield* _(
-    Effect.all(getRandomNumberArray(10).map(getPokemon))
-  );
-  console.log(pokemons.map(formatPokemon).join("\n"), "\n");
+  const arr = yield* _(getRandomNumberArray);
+  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+  yield* _(Effect.log("\n" + pokemons.map(formatPokemon).join("\n")));
   
   const heaviest = yield* _(calculateHeaviestPokemon(pokemons));
-  
-  console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`);
+  yield* _(Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`));
 });
 ```
 
 notes:
-we yield the result of Effect.all then log out the formatted result, then yield the result of the heaviest calculation and log it out
+In our main program, we yield each effect assigning the result to a variable if there is one.
 
 ---
 
@@ -828,6 +885,14 @@ Effect's on the other hand treat errors as first class citizens, allowing them t
 
 ---
 ```ts
+Effect.fail(new Error("two pokemon have the same weight!"))
+```
+
+notes:
+Up to now we've been using native Error objects with messages as our errors, but Effect's error handling becomes really powerful when you define your own error types.
+
+---
+```ts
 type DivideByZeroError = {
 	readonly _tag: "DivideByZeroError"
 }
@@ -840,7 +905,9 @@ type HttpError = {
 
 
 notes:
-While you could use any type of value as an Error, creating new error types is a common pattern in Effect. To prevent typescript from unifying types, Effect commonly uses a `_tag` field with a unique string name for that type.
+In normal javascript the convention is to extend the Error class, but this is not required in Effect, just a plain object type that defines the contents of the error.
+
+To prevent typescript from unifying types during inference and to identify types at runtime, Effect commonly uses a `_tag` field with a unique string name for that type.
 
 ---
 
@@ -854,8 +921,8 @@ class HttpError {
 	constructor(readonly statusCode: number) {}
 }
 
-new DivideByZeroError();
-new HttpError(404);
+Effect.fail(new DivideByZeroError());
+Effect.fail(new HttpError(404));
 ```
 
 notes:
@@ -927,7 +994,7 @@ const caughtTags = mayError.pipe(
       Effect.succeed(
         `recovering from httpError with status: ${httpError.statusCode}`
       ),
-    DivideByZeroError: (_divideByZeroError) =>
+    DivideByZeroError: () =>
       Effect.succeed("recovering from divideByZeroError"),
   })
 );
@@ -975,15 +1042,34 @@ Now lets modify our pokemon program to handle errors where we previously ignored
 // returns: Effect<never, unknown, Pokemon>
 const getPokemon = (id: number) =>
   pipe(
-    Effect.tryPromise(() =>
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
-    ),
+    Effect.tryPromise({
+      try: () =>
+        fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
+          res.json()
+        ),
+      catch: () => new Error("error fetching pokemon"),
+    }),
     Effect.flatMap(parsePokemon)
   );
 ```
 
 notes:
-We'll start by modifying our getPokemon function. It has two possible errors, the response promise rejected and the json promise rejecting. Previously we had try promise catch any errors and pass them to the error channel as unknown, but this time we want place a specific error type in the error channel. 
+We'll start by modifying our getPokemon function. It has two possible errors, the response promise rejected and the json promise rejecting. Previously we caught both under the same generic error object, however now lets make them distinct.
+
+---
+
+```ts
+class FetchError {
+  readonly _tag = "FetchError";
+}
+
+class JSONError {
+  readonly _tag = "JSONError";
+}
+```
+
+notes:
+To start we'll define our new errors as classes. These don't need to contain any additional information, their identifier alone is enough.
 
 ---
 
@@ -1003,17 +1089,23 @@ const getPokemon = (id: number) =>
       })
     ),
     // Effect<never, FetchError | JSONError, any>
-    Effect.flatMap(parsePokemon)
+    Effect.flatMap((x) => parsePokemon(x))
     // Effect<never, FetchError | JSONError | ParseError, Pokemon>
   );
 ```
 
 notes:
-To do this we can use an overload of the tryPromise function that takes an object with a try and a catch function. First we try the fetch call, if it rejects we fail with a new FetchError. Then we flatMap with another call to an overloaded tryPromise, this time returning a new JSON error. Finally we flatMap with our validation function which also adds its own error type to our final effect.
+Now we can separate the fetch call and the json call into two separate tryPromise effects, which each fail with their respective error type.
+
+Now we can see the resulting effect contains all three possible errors that could occur.
 
 ---
+```ts [1-4, 10]
+class SameWeightError {
+  readonly _tag = "SameWeightError";
+  constructor(readonly weight: number) {}
+}
 
-```ts [5]
 // type: Effect<never, SameWeightError, number>
 const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
   Effect.reduce(pokemons, 0, (highest, pokemon) =>
@@ -1024,7 +1116,7 @@ const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
 ```
 
 notes:
-our calculate heaviest pokemon function now returns a SameWeight Error instead of the generic Error object it did before.
+Next we'll create a same weight error for the calculateHeaviestPokemon function. It will contain the weight that the two pokemon share
 
 ---
 ```ts [1]
@@ -1043,7 +1135,7 @@ const program = pipe(
 
 
 notes:
-We can see these errors have made it all the way to our final program effect. We want this final program to never fail so lets add logic to handle these errors.
+We can see these all the errors have made it all the way to our final program effect. We want this final program to never fail so lets add logic to handle these errors.
 
 ---
 
@@ -1056,9 +1148,7 @@ const program = pipe(
   ),
   Effect.flatMap(calculateHeaviestPokemon),
   Effect.catchTag("SameWeightError", (e) =>
-    Effect.sync(() =>
-      console.log(`Two pokemon have the same weight: ${e.weight}`)
-    )
+    Effect.log(`Two pokemon have the same weight: ${e.weight}`)
   ),
   Effect.map((heaviest) =>
     console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
@@ -1067,7 +1157,7 @@ const program = pipe(
 ```
 
 notes:
-In our program we can catch the same weight error and console.log an alternative message.
+to start, we can catch the same weight error and log out a message
 
 however, the errors from the getPokemon function are still there
 
@@ -1095,7 +1185,7 @@ const getPokemon = (id: number) =>
 notes:
 At the end of our pipeline in getPokemon we can use catchAll to handle every error case and return a default implementation of our pokemon type
 
-now the error channel returned is never
+now the error type of the returned effect is never
 
 ---
 
@@ -1107,7 +1197,7 @@ const program = pipe(
 ```
 
 notes:
-now our program has an error channel of never, meaning we can be sure it will never error
+after this our entire program has an error channel of never, meaning we can be sure it will never error
 
 ---
 
@@ -1136,30 +1226,53 @@ const getPokemon = (id: number) =>
 ```
 
 notes:
-In generators all of the code represents the happy path, so we have to add error handling at the end of the generator. Here's what our the gen version of our new getPokemon function looks like. We create variable for response and json, yielding effects like before. At the end we use the pipe method to pass our catchAll functionality.
+In generators, code represents the happy path, so we can add error handling at the end of the generator. Here's what our the gen version of our new getPokemon function looks like. We create variable for response and json, yielding effects like before. At the end we use the pipe method to pass our catchAll functionality.
 
 ---
 
 ```ts [9-14]
 // type: Effect<never, never, void>
 const program = Effect.gen(function* (_) {
-  const pokemons = yield* _(
-    Effect.all(getRandomNumberArray(10).map(getPokemon))
-  );
-  console.log(pokemons.map(formatPokemon).join("\n"), "\n");
+  const arr = yield* _(getRandomNumberArray);
+  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+  yield* _(Effect.log("\n" + pokemons.map(formatPokemon).join("\n")));
   const heaviest = yield* _(calculateHeaviestPokemon(pokemons));
-  console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`);
+  yield* _(Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`));
 }).pipe(
   Effect.catchTag("SameWeightError", (e) =>
-    Effect.sync(() =>
-      console.log(`Two pokemon have the same weight: ${e.weight}`)
-    )
+    Effect.log(`Two pokemon have the same weight: ${e.weight}`)
   )
 );
 ```
 
 notes:
 We can do a similar thing for our program effect, adding our catchTag functionality in the pipe method after the generator.
+
+---
+
+```ts [6-17]
+const program = Effect.gen(function* (_) {
+  const arr = yield* _(getRandomNumberArray);
+  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+  yield* _(Effect.log("\n" + pokemons.map(formatPokemon).join("\n")));
+
+  const heaviestResult = yield* _(
+    Effect.either(calculateHeaviestPokemon(pokemons))
+  );
+
+  yield* _(
+    Effect.match(heaviestResult, {
+      onSuccess: (heaviest) =>
+        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`),
+      onFailure: (e) =>
+        Effect.log(`Two pokemon have the same weight: ${e.weight}`),
+    })
+  );
+});
+```
+
+notes:
+One other option here would be to use Effect.either to get make the value yielded either the value or error, then use Effect.match to handle both cases.
 
 ---
 
@@ -1171,7 +1284,7 @@ Effect.tryPromise({
 ```
 
 notes:
-Our pokemon app is hard coded to fetch data through a fetch call to a specific api, but what if we wanted to get the data from a different api, or a database, or maybe even add a cache layer within our application to check before making an api call. To do this traditionally you would have to refactor your code on every change, 
+Currently our pokemon app is hard coded to fetch data through a fetch call to a specific api, but what if we wanted to get the data from a different api, or a database, or maybe even add a cache layer within our application to check before making an api call. To do this traditionally you would have to refactor your code on every change, 
 
 ```ts
 const getPokemon = (id: number, client: PokemonClient) =>
@@ -1200,7 +1313,7 @@ interface Random {
 ```
 
 notes:
-first we'll define the type signature of our dependency. Here it will be an object with a unique tag and one other property, next, that is a Effect never never number. Next is noticeably not a method, because effects are lazily evaluated, every time next is run a new number will be yielded.
+first we'll define the type signature of our dependency. Here it will be an object with a unique tag and one other property, next, that is a Effect never never number. Like earlier, next is noticeably not a method, because effects are lazily evaluated, every time next is run a new number will be yielded.
 
 ---
 ```ts
@@ -1211,11 +1324,11 @@ interface Random {
   readonly next: Effect.Effect<never, never, number>
 }
 
-const Random = Context.Tag<Random>("@app/Random")
+const Random = Context.Tag<Random>()
 ```
 
 notes:
-Next we'll import the context module from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of the type passed as the generic.
+Then we'll import the context module from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of the type passed as the generic. 
 
 ---
 ```ts
@@ -1223,13 +1336,13 @@ Next we'll import the context module from effect and use the tag function passin
 const program = pipe(
   Random,
   // "random" type: Random
-  Effect.flatMap((random) => random.next()),
+  Effect.flatMap((random) => random.next),
   Effect.flatMap((randomNumber) => Effect.log(`random number: ${randomNumber}`))
 )
 ```
 
 notes:
-We can use the tag just like any other effect, here piping it through flatMap. Within the flatmap function we get access to the value of type Random which we can call the next method on. Notice how the Random type now appears in the requirements field of the resulting Effect.
+We can use the tag just like any other effect, here piping it through flatMap. Within the flatmap function we get access to the value of type Random where we can use the next attribute. Notice how the Random type now appears in the requirements field of the resulting Effect.
 
 ---
 
@@ -1244,7 +1357,7 @@ Effect.runSync(program) // ERROR! Type 'Random' is not assignable to type 'never
 ```
 
 notes:
-If we try to run a program with a requirements field that is not 'never' we get a type error. Effect is ensuring we provide any dependencies required for our program before it can be run.
+If we try to run a program with a requirements field that is not type 'never' we get a type error. Effect is ensuring we provide any dependencies required for our program before it can be run.
 
 ---
 ```ts
@@ -1252,7 +1365,7 @@ If we try to run a program with a requirements field that is not 'never' we get 
 const runnable = program.pipe(
   Effect.provideService(
     Random,
-    Random.of({ next: Effect.sync(() => Math.random()) })
+    Random.of({ _tag: "Random", next: Effect.sync(() => Math.random()) })
   )
 );
 
@@ -1260,13 +1373,14 @@ Effect.runSync(runnable);
 // console: random number: 0.8132812328994277
 ```
 notes:
-We can do this with the provide service function. It takes the tag, and a value that fulfils the type of the tag. After we provide the function notice how the requirements field has gone back to never, meaning this Effect can now be run.
+We can do this with the provide service function. It takes the tag, and a value that fulfils the type of the tag. After we provide the service notice how the requirements field has gone back to never, meaning this Effect can now be run.
 
-Now lets apply this concept to our pokemon program
+ lets apply this concept to our pokemon program
 
 ---
 ```ts
 type PokemonClient = {
+  _tag: "PokemonClient";
   getById(
     id: number
   ): Effect.Effect<never, FetchError | JSONError | ParseError, Pokemon>;
@@ -1316,7 +1430,7 @@ program.pipe(
 ```
 
 notes:
-now we can provide the pokemon client implementation before passing the result to runPromise. Here our implementation of the getById methos is identical to the logic of our getPokemon function previously, but now we could change the data source or adding caching and our downstream usage of the client doesn't need to change at all.
+now we can provide the pokemon client implementation before passing the result to runPromise. Here our implementation of the getById method is identical to the logic of our getPokemon function previously, but now we could change the data source or adding caching, and our downstream usage of the client doesn't need to change at all.
 
 ---
 
@@ -1338,7 +1452,7 @@ With generators we get the client by yielding the tag and return the yielded res
 ## Logging
 
 notes:
-Our final topic will be logging. Effect provides a powerful set of logging tools to use observe your program.
+Our final topic will be logging. Effect provides a powerful set of logging tools to use to observe your program.
 
 ---
 
@@ -1354,7 +1468,7 @@ timestamp=2023-07-05T09:14:53.275Z level=INFO fiber=#0 message="Application star
 ```
 
 notes:
-the log function logs the given message to the console along with some additional information and returns a void effect
+As briefly introduced earlier, the log function logs the given message to the console along with some additional information and returns a void effect
 
 ---
 
@@ -1398,7 +1512,7 @@ timestamp=2023-07-25T04:33:07.743Z level=DEBUG fiber=#2 message=debug
 ```
 
 notes:
-Using the withMinimumLogLevel function from the Logger module we can manually adjust this setting. In this case we can lower it to now show debug logs, but if you only set a higher minimum level you can as well.
+Using the withMinimumLogLevel function from the Logger module we can manually adjust this setting. In this case we can lower it to now show debug logs, but if you can choose to set a higher minimum level as well.
 
 ---
 
@@ -1449,43 +1563,33 @@ const program = pipe(
 ```
 
 notes:
-First we'll convert our previous console log when catching the same weight error to a effect error log, then add a program finished log after the program has completed along with its on log span
+First we'll convert our previous vanilla log when catching the same weight error to an error log, then we'll add a program finished log after the program has completed along with its own log span
 
 ---
 
 ```
-drowzee weighs 324 hectograms
-rattata weighs 35 hectograms
-pikachu weighs 60 hectograms
-golduck weighs 766 hectograms
-venomoth weighs 125 hectograms
-nidorina weighs 200 hectograms
-pidgey weighs 18 hectograms
-paras weighs 54 hectograms
-jigglypuff weighs 55 hectograms
-cloyster weighs 1325 hectograms
+...
 
-The heaviest pokemon weighs 1325 hectograms!
-timestamp=2023-07-25T05:33:58.404Z level=INFO fiber=#0 message="program finished" program=598ms
+timestamp=2023-07-27T03:51:48.296Z level=INFO fiber=#0 message="program finished" program=454ms
 ```
 
 notes:
-after running, it looks like the program took around 600ms to complete.
+after running, it looks like the program took around 450ms to complete.
 
 ---
 ```ts
-Effect.all(getRandomNumberArray(10).map(getPokemon))
+Effect.all(arr.map(getPokemon))
 ```
 
 notes:
-by default effect.all runs effects in sequence one at a time, in this case only making the next pokemon fetch request after the one before it has fully completed.
+by default effect.all runs effects in sequence one at a time, in our case only making the next pokemon fetch request wait until the one before it has fully completed.
 
 We can speed this up by running the effects concurrently all at the same time
 
 ---
 
 ```ts
-Effect.all(getRandomNumberArray(10).map(getPokemon), {
+Effect.all(arr.map(getPokemon), {
     concurrency: "unbounded",
 })
 ```
@@ -1495,11 +1599,11 @@ In effect this is as easy as adding concurrency unbounded as a additional argume
 
 ---
 ```
-timestamp=2023-07-25T05:39:44.878Z level=INFO fiber=#0 message="program finished" program=253ms
+timestamp=2023-07-27T03:52:53.068Z level=INFO fiber=#0 message="program finished" program=208ms
 ```
 
 notes:
-Running it again and we've cut the time in half, pretty cool.
+Running it again and with just that one change we've cut the time in half, pretty cool. Program complete!
 
 ---
 
@@ -1516,13 +1620,13 @@ Effects are immutable values describing some operators to be executed when the e
 ---
 
 ### Creating Effects
-- From a value: `success` and `fail`
+- From a value: `succeed` and `fail`
 - From a function (or something that triggers side effects)
 	- Synchronous: `sync` and `try` for catching errors
 	- Asynchronous: `promise` and `tryPromise` for handling rejections
 
 notes:
-To create Effects from values we use the success and fail constructors. To create effects from a function, or any operation that triggers a side effect we use sync or promise for asynchronous effects. If these operations have any chance of failing we must try or tryPromise to absorb those errors into the resulting Effect
+To create Effects from values we use the succeed and fail constructors. To create effects from a function, or any operation that triggers a side effect we use sync, or promise for asynchronous effects. If these operations have any chance of failing we must try or tryPromise to absorb those errors into the resulting Effect
 
 ---
 
