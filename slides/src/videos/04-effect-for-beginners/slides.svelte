@@ -258,4 +258,286 @@
 			<img src={pipeMermaid} alt="logo" class="h-14" />
 		</Layout>
 	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="1-3|5-6|8">
+				{`
+					const increment = (x: number) => x + 1
+					const double = (x: number) => x * 2
+					const subtractTen = (x: number) => x - 10
+					
+					const result = pipe(5, increment, double, subtractTen)
+					// identical to subtractTen(double(increment(5)))
+					
+					console.log(result) // Output: 2
+			  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>The pipe method</h1>
+			<Code lang="ts">
+				{`
+				pipe(effect, func1, func2, ...)
+				effect.pipe(func1, func2, ...)
+				// These are identical
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Transforming the value of an effect with map</h1>
+			<Code lang="ts" lines="|5">
+				{`
+				// type: Effect<never, never, string>
+				const mappedEffect = pipe(
+				  Effect.succeed(1),
+				  // "x" type: number
+				  Effect.map((x) => String(x))
+				)
+				 
+				console.log(Effect.runSync(mappedEffect)) // Output: "1"
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Mapped effect</h1>
+			<Code lang="ts" lines="|2|4">
+				{`
+				const mappedEffect = pipe(
+				  Effect.succeed({ x: 5, y: 0 }),
+				  Effect.map(({x, y}: { x: number, y: number }) =>
+						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
+				  )
+				)
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>This isn't right</h1>
+			<Code lang="ts" lines="7-11">
+				{`
+				const mappedEffect = pipe(
+				  Effect.succeed({ x: 5, y: 0 }),
+				  Effect.map(({x, y}: { x: number, y: number }) =>
+					y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
+				  )
+				)
+				typeof mappedEffect = Effect<
+					never, 
+					never, 
+					Effect<never, Error, number>
+				>;
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>We want to the Effects to merge</h1>
+			<Code lang="ts">
+				{`
+				type WhatWeWant = Effect<never, Error, number>;
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Effectful transformations with flatMap</h1>
+			<Code lang="ts" lines="4-6|1">
+				{`
+				// type: Effect<never, Error, number>
+				const flatMappedEffect = pipe(
+				  Effect.succeed({ x: 5, y: 0 }),
+				  Effect.flatMap(({x, y}: { x: number, y: number }) =>
+						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
+				  )
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|1-2|4-8|10-11">
+				{`
+				// type: Effect<never, never, number>
+				const getRandomNumber = Effect.sync(() => Math.random() * 10);
+
+				// returns: Effect<never, Error, number>
+				const checkIfAtLeastFive = (x: number) =>
+				  x > 5 ? 
+						Effect.succeed(x) : 
+						Effect.fail(new Error("number is less than 5"));
+
+				// returns: Effect<never, never, void>
+				const logNumber = (x: number) => Effect.log(x.toString());
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="2-3">
+				{`
+				const program = pipe(
+				  getRandomNumber,
+				  // Effect<never, never, number>
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Normal Typescript</h1>
+			<Code lang="ts" lines="6-10">
+				{`
+					// Normal Typescript
+					const getRandomNumber = Math.random() * 10;
+					getRandomNumber // 6.687255774479639
+					getRandomNumber // 6.687255774479639
+					getRandomNumber // 6.687255774479639
+		    `}
+			</Code>
+			<h1>Effect</h1>
+			<Code lang="ts" lines="6-10">
+				{`
+					// type: Effect<never, never, number>
+					const getRandomNumber = Effect.sync(() => Math.random() * 10);
+					Effect.runSync(getRandomNumber) // 5.302813847147179
+					Effect.runSync(getRandomNumber) // 6.935519254857123
+					Effect.runSync(getRandomNumber) // 3.2272729578006554 
+				`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="4-5">
+				{`
+				const program = pipe(
+				  getRandomNumber,
+				  // Effect<never, never, number>
+				  Effect.map((x) => x * 2),
+				  // Effect<never, never, number>
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="6-7">
+				{`
+				const program = pipe(
+				  getRandomNumber,
+				  // Effect<never, never, number>
+				  Effect.map((x) => x * 2),
+				  // Effect<never, never, number>
+				  Effect.flatMap((x) => checkIfAtLeastFive(x)),
+				  // Effect<never, Error, number>
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="8-9">
+				{`
+				const program = pipe(
+				  getRandomNumber,
+				  // Effect<never, never, number>
+				  Effect.map((x) => x * 2),
+				  // Effect<never, never, number>
+				  Effect.flatMap((x) => checkIfAtLeastFive(x)),
+				  // Effect<never, Error, number>
+				  Effect.flatMap((x) => logNumber(x))
+				  // Effect<never, Error, void>
+				);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>The value was consumed by logNumber</h1>
+			<Code lang="ts">
+				{`
+				pipe(
+					Effect.succeed(5),
+					Effect.flatMap((x) => logNumber(x)),
+					Effect.map((x) => x + 1)
+					// ^ ERROR: 
+					// '+' cannot be applied to types 'void' and 'number'.
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Execute side effects with tap</h1>
+			<Code lang="ts" lines="3-5">
+				{`
+				const program = pipe(
+					Effect.succeed(5),
+					Effect.tap((x) => logNumber(x)),
+					// x is still available!
+					Effect.map((x) => x + 1)
+				)
+
+				Effect.runSync(program); // 6
+				// console: 5
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Consuming multiple Effects with all</h1>
+			<Code lang="ts" lines="4-5|">
+				{`
+				const foo = Effect.succeed(42)
+				const bar = Effect.succeed("Hello")
+				
+				// type: Effect<never, never, [number, string]>
+				const combinedEffect = Effect.all([foo, bar])
+				
+				console.log(Effect.runSync(combinedEffect))
+				// console: [42, "Hello"]
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>A real program!</h1>
+		</Layout>
+	</Slide>
 </Presentation>

@@ -347,7 +347,7 @@ const mappedEffect = pipe(
 ```
 
 ```ts
-type mappedEffect = Effect<
+typeof mappedEffect = Effect<
 	never, 
 	never, 
 	Effect<never, Error, number>
@@ -506,6 +506,7 @@ Execute side effects with tap
 const program = pipe(
 	Effect.succeed(5),
 	Effect.tap((x) => logNumber(x)),
+	// x is still available!
 	Effect.map((x) => x + 1)
 )
 
