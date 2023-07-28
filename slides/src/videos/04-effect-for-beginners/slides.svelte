@@ -1464,4 +1464,207 @@
 			</Code>
 		</Layout>
 	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="2">
+				{`
+				Effect.tryPromise({
+					try: () => fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`),
+					catch: () => new FetchError(),
+				}),
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				const getPokemon = (id: number, client: PokemonClient) =>
+					pipe(
+						client.pokemon.getById(id),
+						// ...
+					)
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="font-bold text-8xl">Adding Requirements</h1>
+			<h3>(dependency injection)</h3>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|2|3">
+				{`
+				interface Random {
+					readonly _tag: "Random"
+					readonly next: Effect.Effect<never, never, number>
+				}
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				import { Effect, Context } from "effect"
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="8">
+				{`
+				import { Effect, Context } from "effect"
+
+				interface Random {
+					readonly _tag: "Random"
+					readonly next: Effect.Effect<never, never, number>
+				}
+
+				const Random = Context.Tag<Random>()
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="3-4|1">
+				{`
+				// type: Effect<Random, never, void>
+				const program = pipe(
+					Random,
+					Effect.flatMap((random) => random.next),
+					Effect.flatMap(
+						(randomNumber) => Effect.log(\`random number: \${randomNumber}\`)
+					)
+				)
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				// type: Effect<Random, never, void>
+				const program = pipe(
+					Random,
+					// ...
+				)
+
+				Effect.runSync(program)
+				// ERROR! Type 'Random' is not assignable to type 'never'
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="3-6|1,9">
+				{`
+				// type: Effect<never, never, number>
+				const runnable = program.pipe(
+					Effect.provideService(
+						Random,
+						Random.of({ _tag: "Random", next: Effect.sync(() => Math.random()) })
+					)
+				);
+
+				Effect.runSync(runnable);
+				// console: random number: 0.8132812328994277
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|3-4">
+				{`
+				type PokemonClient = {
+					_tag: "PokemonClient";
+					getById: (id: number) => 
+						Effect.Effect<never, FetchError | JSONError | ParseError, Pokemon>;
+				};
+
+				const PokemonClient = Context.Tag<PokemonClient>();
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|4-5|6|1">
+				{`
+				// return type: Effect<PokemonClient, never, Pokemon>
+				const getPokemon = (id: number) =>
+				pipe(
+					PokemonClient,
+					Effect.flatMap((client) => client.getById(id)),
+					Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
+				);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="1-2,12|3-10">
+				{`
+				program.pipe(
+					Effect.provideService(PokemonClient, {
+						getById: (id) =>
+							pipe(
+								Effect.tryPromise(...),
+								Effect.flatMap((response) =>
+									Effect.tryPromise(...)
+								),
+								Effect.flatMap(parsePokemon)
+							),
+					}),
+					Effect.runPromise
+				);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|3|4">
+				{`
+				const getPokemon = (id: number) =>
+					Effect.gen(function* (_) {
+						const client = yield* _(PokemonClient);
+						return yield* _(client.getById(id));
+					}).pipe(
+						Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
+					);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="font-bold text-7xl">Logging</h1>
+		</Layout>
+	</Slide>
 </Presentation>
