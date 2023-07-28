@@ -153,7 +153,7 @@
 	<Slide animate>
 		<Layout>
 			<h1>Asynchronous computations</h1>
-			<Code lang="ts">
+			<Code lang="ts" lines="|1">
 				{`
 					// type: Effect<never, never, number>
 					const promise = Effect.promise(() => Promise.resolve(42));
@@ -293,7 +293,7 @@
 	<Slide animate>
 		<Layout>
 			<h1>Transforming the value of an effect with map</h1>
-			<Code lang="ts" lines="|5">
+			<Code lang="ts" lines="|5|1|">
 				{`
 				// type: Effect<never, never, string>
 				const mappedEffect = pipe(
@@ -332,7 +332,7 @@
 				const mappedEffect = pipe(
 				  Effect.succeed({ x: 5, y: 0 }),
 				  Effect.map(({x, y}: { x: number, y: number }) =>
-					y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
+						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
 				  )
 				)
 				typeof mappedEffect = Effect<
@@ -635,14 +635,17 @@
 
 	<Slide animate>
 		<Layout>
-			<Code lang="ts" lines="1,7-8">
+			<Code lang="ts" lines="1">
 				{`
 					// type: Effect<never, never, number>[]
 					const getRandomNumberArray = 
 						Array.from({ length: 10 }, () =>
 								Effect.sync(() => Math.floor(Math.random() * 100) + 1)
 						)
-						
+				`}
+			</Code>
+			<Code lang="ts" lines="1-2">
+				{`			
 					// type: Effect<never, never, number[]>
 					const getRandomNumberArray = Effect.all(
 						Array.from({ length: 10 }, () =>
@@ -741,9 +744,9 @@
 				// return type: Effect<never, Error, number>
 				const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
 				  Effect.reduce(pokemons, 0, (highest, pokemon) =>
-					pokemon.weight === highest
-					  ? Effect.fail(new Error("two pokemon have the same weight!"))
-					  : Effect.succeed(pokemon.weight > highest ? pokemon.weight : highest)
+						pokemon.weight === highest
+							? Effect.fail(new Error("two pokemon have the same weight!"))
+							: Effect.succeed(pokemon.weight > highest ? pokemon.weight : highest)
 				  );
 		  `}
 			</Code>
@@ -899,16 +902,16 @@
 				// type: Effect<never, unknown, Pokemon>
 				const getPokemon = (id: number) =>
 				  Effect.gen(function* (_) {
-					const res = yield* _(
-					  Effect.tryPromise({
-						try: () =>
-						  fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`).then((res) =>
-							res.json()
-						  ),
-						catch: () => new Error("error fetching pokemon"),
-					  })
-					);
-					return yield* _(parsePokemon(res));
+						const res = yield* _(
+							Effect.tryPromise({
+								try: () =>
+									fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`).then((res) =>
+									res.json()
+									),
+								catch: () => new Error("error fetching pokemon"),
+							})
+						);
+						return yield* _(parsePokemon(res));
 				  });
 		  `}
 			</Code>
@@ -1269,7 +1272,9 @@
 				const program = pipe(
 					Effect.all(getRandomNumberArray(10).map(getPokemon)),
 					Effect.tap((pokemons) =>
-						Effect.sync(() => console.log(pokemons.map(formatPokemon).join("\\n"), "\\n"))
+						Effect.sync(
+							() => console.log(pokemons.map(formatPokemon).join("\\n"), "\\n")
+						)
 					),
 					Effect.flatMap(calculateHeaviestPokemon),
 					Effect.map((heaviest) =>
@@ -1614,11 +1619,11 @@
 				{`
 				// return type: Effect<PokemonClient, never, Pokemon>
 				const getPokemon = (id: number) =>
-				pipe(
-					PokemonClient,
-					Effect.flatMap((client) => client.getById(id)),
-					Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
-				);
+					pipe(
+						PokemonClient,
+						Effect.flatMap((client) => client.getById(id)),
+						Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
+					);
 			`}
 			</Code>
 		</Layout>

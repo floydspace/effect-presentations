@@ -753,7 +753,7 @@ const program = pipe(
 notes:
 Then we can add this to the end of our program, flat mapping with our calculate heaviest pokemon function and logging out the result, this time with flatMap instead of tap as its fine to consume the number as this is the final part of our program.
 
-The type of our entire program is Effect never unknown void meaning it takes no requirements, may error with some Error object, and returns no value on success.
+The type of our entire program is Effect never Error void meaning it takes no requirements, may error with some Error object, and returns no value on success.
 
 ---
 ```
