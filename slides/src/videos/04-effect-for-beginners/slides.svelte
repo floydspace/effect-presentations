@@ -1667,4 +1667,204 @@
 			<h1 class="font-bold text-7xl">Logging</h1>
 		</Layout>
 	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				// type: Effect<never, never, void>
+				const program = Effect.log("Application started")
+
+				Effect.runSync(program)
+				/*
+				Output:
+				timestamp=2023-07-05T09:14:53.275Z level=INFO fiber=#0 
+				message="Application started"
+				*/
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				const logLevels = pipe(
+				  Effect.log("info by default"),
+				  Effect.flatMap(() => Effect.logDebug("debug")),
+				  Effect.flatMap(() => Effect.logInfo("info")),
+				  Effect.flatMap(() => Effect.logWarning("warning")),
+				  Effect.flatMap(() => Effect.logError("error")),
+				  Effect.flatMap(() => Effect.logFatal("fatal"))
+				);
+
+				Effect.runSync(logLevels);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				const logLevels = pipe(
+				  Effect.log("info by default"),
+				  Effect.flatMap(() => Effect.logDebug("debug")),
+				  Effect.flatMap(() => Effect.logInfo("info")),
+				  Effect.flatMap(() => Effect.logWarning("warning")),
+				  Effect.flatMap(() => Effect.logError("error")),
+				  Effect.flatMap(() => Effect.logFatal("fatal"))
+				);
+
+				Effect.runSync(logLevels);
+			`}
+			</Code>
+			<Code>
+				{`
+					timestamp=2023-... level=INFO fiber=#1 message="info by default"
+					timestamp=2023-... level=INFO fiber=#1 message=info
+					timestamp=2023-... level=WARN fiber=#1 message=warning
+					timestamp=2023-... level=ERROR fiber=#1 message=error
+					timestamp=2023-... level=FATAL fiber=#1 message=fatal
+				`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="5">
+				{`
+				import { Effect, Logger, LoggerLevel, pipe } from "effect";
+
+				const logDebug = pipe(
+				  Effect.logDebug("debug"),
+				  Logger.withMinimumLogLevel(LoggerLevel.Debug)
+				);
+
+				Effect.runSync(logDebug);
+			`}
+			</Code>
+			<Code>
+				{`
+					timestamp=2023-... level=DEBUG fiber=#2 message=debug
+				`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Timing Things!</h1>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="3-5">
+				{`
+				// type: Effect<never, never, void>
+				const program = pipe(
+				  Effect.sleep("1 seconds"),
+				  Effect.flatMap(() => Effect.log("The job is finished!")),
+				  Effect.withLogSpan("myspan")
+				)
+
+				Effect.runPromise(program)
+			`}
+			</Code>
+			<Code lines="2">
+				{`
+					timestamp=2023-... level=INFO fiber=#0 
+					message="The job is finished!" myspan=1011ms
+				`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="4">
+				{`
+				const program = pipe(
+				  // ...
+					Effect.catchTag("SameWeightError", (e) =>
+						Effect.log(\`Two pokemon have the same weight: \${e.weight}\`)
+					),
+				  Effect.flatMap((heaviest) =>
+						Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`)
+					),
+				);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="4,9-10">
+				{`
+				const program = pipe(
+				  // ...
+					Effect.catchTag("SameWeightError", (e) =>
+						Effect.logError(\`Two pokemon have the same weight: \${e.weight}\`)
+					),
+				  Effect.flatMap((heaviest) =>
+						Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`)
+					),
+					Effect.tap(() => Effect.log("program finished")),
+					Effect.withLogSpan("program")
+				);
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code>
+				{`
+				...
+				
+				timestamp=2023-07-27T03:51:48.296Z level=INFO fiber=#0 
+				message="program finished" program=454ms
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				Effect.all(arr.map(getPokemon))
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				Effect.all(arr.map(getPokemon), {
+				    concurrency: "unbounded",
+				})
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code>
+				{`
+				timestamp=2023-07-27T03:52:53.068Z level=INFO fiber=#0 
+				message="program finished" program=208ms
+			`}
+			</Code>
+		</Layout>
+	</Slide>
 </Presentation>

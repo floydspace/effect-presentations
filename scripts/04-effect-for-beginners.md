@@ -1573,8 +1573,8 @@ const program = pipe(
   Effect.catchTag("SameWeightError", (e) =>
     Effect.logError(`Two pokemon have the same weight: ${e.weight}`)
   ),
-  Effect.map((heaviest) =>
-    console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+  Effect.flatMap((heaviest) =>
+    Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
   ),
   Effect.tap(() => Effect.log("program finished")),
   Effect.withLogSpan("program")
