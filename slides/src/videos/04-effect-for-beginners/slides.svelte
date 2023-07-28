@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { Presentation, Slide, Media, Code } from '@components'
+	import { Presentation, Slide, Media, Code, Step } from '@components'
 	import Layout from '@shared/layout.svelte'
 	import effectLogo from '@attachments/effect-logo.png'
 	import pipeMermaid from '@attachments/pipe-mermaid.png'
 	import snorlax from '@attachments/143-Snorlax.webp'
-	import Step from '@lib/components/step.svelte'
 </script>
 
 <Presentation>
