@@ -8,7 +8,8 @@
 			"@languages": ["./src/lib/languages/index.ts"],
 			"@lib/*": ["./src/lib/*"],
 			"@stores/*": ["./src/lib/stores/*"],
-			"@styles/*": ["./src/lib/styles/*"]
+			"@styles/*": ["./src/lib/styles/*"],
+			"@attachments/*": ["../scripts/attachments/*"]
 		},
 		"target": "ESNext",
 		"useDefineForClassFields": true,
