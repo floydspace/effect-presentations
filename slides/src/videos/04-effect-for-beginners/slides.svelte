@@ -724,4 +724,213 @@
 			</Code>
 		</Layout>
 	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines={false}>
+				{`
+				const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="3-7|5|1">
+				{`
+				// return type: Effect<never, Error, number>
+				const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
+				  Effect.reduce(pokemons, 0, (highest, pokemon) =>
+					pokemon.weight === highest
+					  ? Effect.fail(new Error("two pokemon have the same weight!"))
+					  : Effect.succeed(pokemon.weight > highest ? pokemon.weight : highest)
+				  );
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				const program = pipe(
+				  getRandomNumberArray,
+				  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
+				  Effect.tap((pokemons) =>
+						Effect.log("\\n" + pokemons.map(formatPokemon).join("\\n"))
+				  ),
+				  // Effect<never, Error, Pokemon[]>
+				);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="8-13">
+				{`
+				const program = pipe(
+				  getRandomNumberArray,
+				  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
+				  Effect.tap((pokemons) =>
+						Effect.log("\\n" + pokemons.map(formatPokemon).join("\\n"))
+				  ),
+				  // Effect<never, Error, Pokemon[]>
+				  Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
+				  // Effect<never, Error, number>
+				  Effect.flatMap((heaviest) =>
+						Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`)
+				  )
+				  // Effect<never, Error, void>
+				);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="8-13">
+				{`
+				// type: Effect<never, Error, void>
+				const program = pipe(
+					// ...
+				);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code>
+				{`
+				timestamp=2023-... level=INFO fiber=#0 message="
+				hypno weighs 756 hectograms
+				raichu weighs 300 hectograms
+				krabby weighs 65 hectograms
+				charmander weighs 85 hectograms
+				farfetchd weighs 150 hectograms
+				slowpoke weighs 360 hectograms
+				tentacruel weighs 550 hectograms
+				golbat weighs 550 hectograms
+				paras weighs 54 hectograms
+				zubat weighs 75 hectograms"
+				timestamp=2023-... level=INFO fiber=#0
+				message="The heaviest pokemon weighs 756 hectograms!"
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="font-bold text-8xl">Generators</h1>
+			<h3>async/await for Effect</h3>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|4|1,6|3|">
+				{`
+				declare const imAnEffect: Effect<never, Error, number>;
+
+				// type: Effect<never, Error, string>
+				const program = Effect.gen(function* (_) {
+					// type: number
+					const valueOfEffect = yield* _(imAnEffect);
+					return String(valueOfEffect);
+				})
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Before:</h1>
+			<Code lang="ts">
+				{`
+				const program = pipe(
+				  getRandomNumber,
+				  // Effect<never, never, number>
+				  Effect.map((x) => x * 2),
+				  // Effect<never, never, number>
+				  Effect.flatMap((x) => checkIfAtLeastFive(x)),
+				  // Effect<never, Error, number>
+				  Effect.flatMap((x) => logNumber(x))
+				  // Effect<never, Error, void>
+				);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>After:</h1>
+			<Code lang="ts" lines="|5|4">
+				{`
+				// type: Effect<never, Error, void>
+				const after = Effect.gen(function* (_) {
+					const x = yield* _(getRandomNumber);
+					const y = x * 2;
+					const z = yield* _(checkIfAtLeastFive(y));
+					yield* _(logNumber(z));
+				});
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>Generators are Optional</h1>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|4-11|13">
+				{`
+				// type: Effect<never, unknown, Pokemon>
+				const getPokemon = (id: number) =>
+				  Effect.gen(function* (_) {
+					const res = yield* _(
+					  Effect.tryPromise({
+						try: () =>
+						  fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`).then((res) =>
+							res.json()
+						  ),
+						catch: () => new Error("error fetching pokemon"),
+					  })
+					);
+					return yield* _(parsePokemon(res));
+				  });
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts">
+				{`
+				// type: Effect<never, unknown, void>
+				const program = Effect.gen(function* (_) {
+				  const arr = yield* _(getRandomNumberArray);
+				  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+				  yield* _(Effect.log("\\n" + pokemons.map(formatPokemon).join("\\n")));
+				  
+				  const heaviest = yield* _(calculateHeaviestPokemon(pokemons));
+				  yield* _(Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`));
+				});
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
 </Presentation>

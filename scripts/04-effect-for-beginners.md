@@ -732,7 +732,6 @@ In this case if two pokemon have the same weight we will consider that an error 
 ---
 
 ```ts [6-9]
-// type: Effect<never, unknown, void>
 const program = pipe(
   getRandomNumberArray,
   // Effect<never, Error, number[]>
