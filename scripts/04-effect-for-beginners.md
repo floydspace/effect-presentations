@@ -181,6 +181,14 @@ If it might, just like the synchronous version try, we can use tryPromise to han
 ---
 
 Running Effects
+```ts
+// type: Effect<never, never, number>
+const program = Effect.sync(() => {
+  console.log("Hello, World!")
+  return 1
+});
+// Console: <blank>
+```
 
 notes:
 Well this is great we have a bunch of Effects, but we have to run them for them to do anything. To do this we can use the two basic run functions provided by Effect.
@@ -232,6 +240,10 @@ To run effects with asynchronous computations we can use runPromise, which will 
 
 Effects are composable...
 So compose them
+```ts
+Effect.succeed(Effect.runSync(myEffect))
+// Please don't do this
+```
 
 notes:
 Running Effects should occur at the edges of your program, when you have no other choice but to run an Effect. 
