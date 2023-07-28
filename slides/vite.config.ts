@@ -13,6 +13,8 @@ export default defineConfig({
 			'@lib': path.resolve(__dirname, './src/lib'),
 			'@stores': path.resolve(__dirname, './src/lib/stores'),
 			'@styles': path.resolve(__dirname, './src/lib/styles'),
+			'@attachments': path.resolve(__dirname, '../attachments'),
+			'@shared': path.resolve(__dirname, './src/shared'),
 		},
 	},
 })

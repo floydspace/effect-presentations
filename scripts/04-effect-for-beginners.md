@@ -108,6 +108,10 @@ In the return type is where the magic happens. See how both the success case and
 
 Delaying Computations
 
+```ts
+const log = Effect.succeed(console.log("dont do this"));
+```
+
 notes:
 Remember how an Effect represents the description of some behavior to be ran at a later point. Well, when we use the succeed and fail constructors, the value passed to them is evaluated when the effect is constructed, not when it is run. 
 
@@ -115,7 +119,7 @@ However, when working with code that has side effects, it might be important to 
 
 ---
 
-A synchronous computations
+Synchronous computations
 ```ts
 // type: Effect<never, never, number>
 const program = Effect.sync(() => {
@@ -132,7 +136,7 @@ Here this Effect represents a program that when run will log to the console and 
 Its important to note that sync always returns an Effect with a error of type never, this is because the function passed to it should be guaranteed to never throw.
 
 ---
-A synchronous computations that could throw
+Synchronous computations that could throw
 ```ts
 // type: Effect<never, Error, any>
 const program = Effect.try({

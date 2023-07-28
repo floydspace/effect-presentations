@@ -9,7 +9,8 @@
 			"@lib/*": ["./src/lib/*"],
 			"@stores/*": ["./src/lib/stores/*"],
 			"@styles/*": ["./src/lib/styles/*"],
-			"@attachments/*": ["../scripts/attachments/*"]
+			"@shared/*": ["./src/shared/*"],
+			"@attachments/*": ["../attachments/*"]
 		},
 		"target": "ESNext",
 		"useDefineForClassFields": true,
