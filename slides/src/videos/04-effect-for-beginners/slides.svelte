@@ -3,6 +3,8 @@
 	import Layout from '@shared/layout.svelte'
 	import effectLogo from '@attachments/effect-logo.png'
 	import pipeMermaid from '@attachments/pipe-mermaid.png'
+	import snorlax from '@attachments/143-Snorlax.webp'
+	import Step from '@lib/components/step.svelte'
 </script>
 
 <Presentation>
@@ -23,7 +25,7 @@
 
 	<Slide animate>
 		<Layout>
-			<Code>
+			<Code lines={false}>
 				{`
 					npm install effect
 					yarn add effect
@@ -538,6 +540,188 @@
 	<Slide animate>
 		<Layout>
 			<h1>A real program!</h1>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl">Find the heaviest Pokemon!</h1>
+			<img src={snorlax} alt="Snorlax" class="h-48" />
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1 class="text-6xl">Find the heaviest Pokemon!</h1>
+			<div class="flex flex-row gap-x-16">
+				<img src={snorlax} alt="Snorlax" class="h-48" />
+				<div class="text-left space-y-5">
+					<li>Generate random numbers</li>
+					<Step><li>Get Pokemon data from API</li></Step>
+					<Step><li>Validate returned JSON</li></Step>
+					<Step><li>Find the heaviest Pokemon</li></Step>
+				</div>
+			</div>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|1">
+				{`
+					// type: Effect<never, Error, any>
+					const getPokemon = (id: number) =>
+						Effect.tryPromise({
+								try: () => fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`)
+									.then((res) => res.json()),
+								catch: (e) => new Error("error fetching pokemon: \${e.message}")
+						}),
+		  	`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>@effect/schema</h1>
+			<Code lang="ts" lines="|3-6|8-9">
+				{`
+					import * as Schema from "@effect/schema/Schema";
+
+					const pokemonSchema = Schema.struct({
+						name: Schema.string,
+						weight: Schema.number,
+					});
+
+					type Pokemon = Schema.To<typeof pokemonSchema>;
+					const parsePokemon = Schema.parseEither(pokemonSchema);
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<h1>validation!</h1>
+			<Code lang="ts" lines="9|1">
+				{`
+				// returns: Effect<never, Error | ParseError, Pokemon>
+				const getPokemon = (id: number) =>
+				  pipe(
+				    Effect.tryPromise({
+					    try: () => fetch(\`https://pokeapi.co/api/v2/pokemon/\${id}\`)
+								.then((res) => res.json()),
+							catch: (e) => new Error("error fetching pokemon: \${e.message}")
+				    }),
+				    Effect.flatMap((x) => parsePokemon(x))
+				  );
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="|4">
+				{`
+				// type: Effect<never, never, number>[]
+				const getRandomNumberArray = 
+					Array.from({ length: 10 }, () =>
+					    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+					)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="1,7-8">
+				{`
+					// type: Effect<never, never, number>[]
+					const getRandomNumberArray = 
+						Array.from({ length: 10 }, () =>
+								Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+						)
+						
+					// type: Effect<never, never, number[]>
+					const getRandomNumberArray = Effect.all(
+						Array.from({ length: 10 }, () =>
+								Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+						)
+					)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="3|4|1">
+				{`
+				// type: Effect<never, Error, Pokemon[]>
+				const program = pipe(
+					getRandomNumberArray,
+					Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
+				)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="7">
+				{`
+				// type: Effect<never, Error, Pokemon[]>
+				const program = pipe(
+					getRandomNumberArray,
+					Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
+				)
+
+				Effect.runPromise(program).then(console.log)
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lines={false} data-id="new">
+				{`
+				[
+				  { name: 'nidorino', weight: 195 },
+				  { name: 'zubat', weight: 75 },
+				  { name: 'mankey', weight: 280 },
+				  { name: 'ekans', weight: 69 },
+				  { name: 'magnemite', weight: 60 },
+				  { name: 'dodrio', weight: 852 },
+				  { name: 'dodrio', weight: 852 },
+				  { name: 'nidorina', weight: 200 },
+				  { name: 'tentacruel', weight: 550 },
+				  { name: 'charmander', weight: 85 }
+				]
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" lines="1-2|7-9">
+				{`
+				const formatPokemon = (pokemon: Pokemon) =>
+				  \`\${pokemon.name} weighs \${pokemon.weight} hectograms\`;
+
+				const program = pipe(
+				  getRandomNumberArray,
+				  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon)))
+				  Effect.tap((pokemons) =>
+				    Effect.log("\\n" + pokemons.map(formatPokemon).join("\\n"))
+				  ),
+				);
+		  `}
+			</Code>
 		</Layout>
 	</Slide>
 </Presentation>

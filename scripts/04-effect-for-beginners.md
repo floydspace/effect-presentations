@@ -549,7 +549,7 @@ And thats all we need to get started on the example program we will make and imp
 ---
 
 Find the heaviest pokemon!
-
+![[143-Snorlax.webp|200]]
 notes:
 Our program will look like this:
 Generate some random numbers
@@ -577,9 +577,6 @@ However the value of the resulting Effect is any, we should validate what type i
 ---
 
 @effect/schema
-```
-pnpm add @effect/schema
-```
 ```ts
 import * as Schema from "@effect/schema/Schema";
 
@@ -632,6 +629,12 @@ next, our random array function, it will generate a array of 10 random numbers b
 
 ---
 ```ts
+// type: Effect<never, never, number>[]
+const getRandomNumberArray = 
+	Array.from({ length: 10 }, () =>
+	    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+	)
+	
 // type: Effect<never, never, number[]>
 const getRandomNumberArray = Effect.all(
 	Array.from({ length: 10 }, () =>
