@@ -167,7 +167,7 @@
 			<h1>Asynchronous computations that could reject</h1>
 			<Code lang="ts">
 				{`
-					// type: Effect<never, unknown, Response>
+					// type: Effect<never, Error, Response>
 					const response = Effect.tryPromise({
 						try: () => fetch("..."),
 						catch: (_caughtError) => new Error("fetch rejected"),
@@ -315,7 +315,7 @@
 				{`
 				const mappedEffect = pipe(
 				  Effect.succeed({ x: 5, y: 0 }),
-				  Effect.map(({x, y}: { x: number, y: number }) =>
+				  Effect.map(({x, y}) =>
 						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
 				  )
 				)
@@ -538,6 +538,23 @@
 
 	<Slide animate>
 		<Layout>
+			<Code lang="ts">
+				{`
+				const foo = Effect.succeed(42)
+				const bar = Effect.succeed("Hello")
+				
+				// type: Effect<never, never, { foo: number, bar: string }>
+				const combinedEffect = Effect.all({ foo, bar })
+				
+				console.log(Effect.runSync(combinedEffect))
+				// console: { foo: 43, bar: "Hello" }
+		  `}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
 			<h1>A real program!</h1>
 		</Layout>
 	</Slide>
@@ -593,7 +610,7 @@
 					});
 
 					type Pokemon = Schema.To<typeof pokemonSchema>;
-					const parsePokemon = Schema.parseEither(pokemonSchema);
+					const parsePokemon = Schema.parse(pokemonSchema);
 		  `}
 			</Code>
 		</Layout>
@@ -899,7 +916,7 @@
 		<Layout>
 			<Code lang="ts" lines="|4-11|13">
 				{`
-				// type: Effect<never, unknown, Pokemon>
+				// type: Effect<never, Error, Pokemon>
 				const getPokemon = (id: number) =>
 				  Effect.gen(function* (_) {
 						const res = yield* _(
@@ -922,7 +939,7 @@
 		<Layout>
 			<Code lang="ts">
 				{`
-				// type: Effect<never, unknown, void>
+				// type: Effect<never, Error, void>
 				const program = Effect.gen(function* (_) {
 				  const arr = yield* _(getRandomNumberArray);
 				  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
@@ -1456,14 +1473,19 @@
 						Effect.either(calculateHeaviestPokemon(pokemons))
 					);
 
-					yield* _(
-						Effect.match(heaviestResult, {
-							onSuccess: (heaviest) =>
-								Effect.log(\`The heaviest pokemon weighs \${heaviest} hectograms!\`),
-							onFailure: (e) =>
-								Effect.log(\`Two pokemon have the same weight: \${e.weight}\`),
-						})
-					);
+					if (Either.isLeft(heaviestResult)) {
+						yield* _(
+							Effect.log(
+								\`Two pokemon have the same weight: \${heaviestResult.left.weight}\`
+							)
+						);
+					} else {
+						yield* _(
+							Effect.log(
+								\`The heaviest pokemon weighs \${heaviestResult.right} hectograms!\`
+							)
+						);
+					}
 				})
 			`}
 			</Code>

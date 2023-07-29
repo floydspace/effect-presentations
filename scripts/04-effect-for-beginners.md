@@ -168,7 +168,7 @@ Just like with `sync` its crucial that the promise returned from the function pa
 ---
 
 ```ts
-// type: Effect<never, unknown, Response>
+// type: Effect<never, Error, Response>
 const response = Effect.tryPromise({
   try: () => fetch("..."),
   catch: (_caughtError) => new Error("fetch rejected"),
@@ -324,7 +324,7 @@ In this example the function passed to map takes in a number, in this case the 1
 ```ts
 const mappedEffect = pipe(
   Effect.succeed({ x: 5, y: 0 }),
-  Effect.map(({x, y}: { x: number, y: number }) =>
+  Effect.map(({x, y}) =>
 	y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
   )
 )
@@ -541,6 +541,21 @@ Here in this example, we merge foo and bar to a single effect then run and log i
 
 ---
 
+```ts
+const foo = Effect.succeed(42)
+const bar = Effect.succeed("Hello")
+ 
+// type: Effect<never, never, { foo: number, bar: string }>
+const combinedEffect = Effect.all({ foo, bar })
+ 
+console.log(Effect.runSync(combinedEffect))
+// console: { foo: 43, bar: "Hello" }
+```
+
+alternatively, all also accepts objects where the values are effects
+
+---
+
 A real program!
 
 notes:
@@ -586,7 +601,7 @@ const pokemonSchema = Schema.struct({
 });
 
 type Pokemon = Schema.To<typeof pokemonSchema>;
-const parsePokemon = Schema.parseEither(pokemonSchema);
+const parsePokemon = Schema.parse(pokemonSchema);
 ```
 notes:
 
@@ -848,7 +863,7 @@ now lets see what it would look like to use generators in our pokemon program wh
 ---
 
 ```ts
-// type: Effect<never, unknown, Pokemon>
+// type: Effect<never, Error, Pokemon>
 const getPokemon = (id: number) =>
   Effect.gen(function* (_) {
     const res = yield* _(
@@ -870,7 +885,7 @@ our new get pokemon function looks like this. We yield the value from our fetch 
 ---
 
 ```ts
-// type: Effect<never, unknown, void>
+// type: Effect<never, Error, void>
 const program = Effect.gen(function* (_) {
   const arr = yield* _(getRandomNumberArray);
   const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
@@ -1058,7 +1073,7 @@ Now lets modify our pokemon program to handle errors where we previously ignored
 ---
 
 ```ts
-// returns: Effect<never, unknown, Pokemon>
+// returns: Effect<never, Error, Pokemon>
 const getPokemon = (id: number) =>
   pipe(
     Effect.tryPromise({
@@ -1279,19 +1294,24 @@ const program = Effect.gen(function* (_) {
     Effect.either(calculateHeaviestPokemon(pokemons))
   );
 
-  yield* _(
-    Effect.match(heaviestResult, {
-      onSuccess: (heaviest) =>
-        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`),
-      onFailure: (e) =>
-        Effect.log(`Two pokemon have the same weight: ${e.weight}`),
-    })
-  );
+  if (Either.isLeft(heaviestResult)) {
+    yield* _(
+      Effect.log(
+        `Two pokemon have the same weight: ${heaviestResult.left.weight}`
+      )
+    );
+  } else {
+    yield* _(
+      Effect.log(
+        `The heaviest pokemon weighs ${heaviestResult.right} hectograms!`
+      )
+    );
+  }
 });
 ```
 
 notes:
-One other option here would be to use Effect.either to get make the value yielded either the value or error, then use Effect.match to handle both cases.
+One other option here would be to use Effect.either to get make the value yielded either the value or error, then use use a if/else block to handle both cases
 
 ---
 
@@ -1343,11 +1363,11 @@ interface Random {
   readonly next: Effect.Effect<never, never, number>
 }
 
-const Random = Context.Tag<Random>()
+const Random = Context.Tag<Random>("@app/Random")
 ```
 
 notes:
-Then we'll import the context module from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of the type passed as the generic. 
+Then we'll import the context module from effect and use the tag function passing the type we just created as a generic. A tag is a unique identifier that represents a dependency of some generic type. A unique string argument is passed to ensure the identifier generated is always the same. 
 
 ---
 ```ts
