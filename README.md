@@ -10,6 +10,8 @@ Code for my videos is in `scripts/`
 
 I build these using [obsidian.md](https://obsidian.md/) and the [advanced-slides plugin](https://github.com/MSzturc/obsidian-advanced-slides): I take each slide, printscreen it, and splice it with my audio using [reaper.fm](http://reaper.fm/).
 
+In the most recent video I used [Animotion](https://animotion.pages.dev/) to render the slides, to do this go to `slides/` and run `pnpm dev`
+
 ---
 
 # Recommended Effect Reading
