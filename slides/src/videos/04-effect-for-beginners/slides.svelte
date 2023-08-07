@@ -331,7 +331,7 @@
 				{`
 				const mappedEffect = pipe(
 				  Effect.succeed({ x: 5, y: 0 }),
-				  Effect.map(({x, y}: { x: number, y: number }) =>
+				  Effect.map(({x, y}) =>
 						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
 				  )
 				)
@@ -364,7 +364,7 @@
 				// type: Effect<never, Error, number>
 				const flatMappedEffect = pipe(
 				  Effect.succeed({ x: 5, y: 0 }),
-				  Effect.flatMap(({x, y}: { x: number, y: number }) =>
+				  Effect.flatMap(({x, y}) =>
 						y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x/y)
 				  )
 				)
@@ -1464,29 +1464,43 @@
 
 	<Slide animate>
 		<Layout>
-			<Code lang="ts" lines="4-6|8-15">
+			<Code lang="ts" lines="5-8">
 				{`
 				// type: Effect<never, never, void>
 				const program = Effect.gen(function* (_) {
 					// ...
+
+					// type: Either<SameWeightError, Pokemon>
 					const heaviestResult = yield* _(
 						Effect.either(calculateHeaviestPokemon(pokemons))
 					);
-
-					if (Either.isLeft(heaviestResult)) {
-						yield* _(
-							Effect.log(
-								\`Two pokemon have the same weight: \${heaviestResult.left.weight}\`
-							)
-						);
-					} else {
-						yield* _(
-							Effect.log(
-								\`The heaviest pokemon weighs \${heaviestResult.right} hectograms!\`
-							)
-						);
-					}
 				})
+			`}
+			</Code>
+		</Layout>
+	</Slide>
+
+	<Slide animate>
+		<Layout>
+			<Code lang="ts" offset="10" lines="|4-10|11-16">
+				{`
+				const heaviestResult = yield* _(
+					Effect.either(calculateHeaviestPokemon(pokemons))
+				);
+
+				if (Either.isLeft(heaviestResult)) {
+					yield* _(
+						Effect.log(
+							\`Two pokemon have the same weight: \${heaviestResult.left.weight}\`
+						)
+					);
+				} else {
+					yield* _(
+						Effect.log(
+							\`The heaviest pokemon weighs \${heaviestResult.right} hectograms!\`
+						)
+					);
+				}
 			`}
 			</Code>
 		</Layout>
@@ -1560,7 +1574,7 @@
 					readonly next: Effect.Effect<never, never, number>
 				}
 
-				const Random = Context.Tag<Random>()
+				const Random = Context.Tag<Random>("@app/Random")
 			`}
 			</Code>
 		</Layout>
@@ -1629,7 +1643,7 @@
 						Effect.Effect<never, FetchError | JSONError | ParseError, Pokemon>;
 				};
 
-				const PokemonClient = Context.Tag<PokemonClient>();
+				const PokemonClient = Context.Tag<PokemonClient>("@app/PokemonClient");
 			`}
 			</Code>
 		</Layout>

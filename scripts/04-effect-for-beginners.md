@@ -380,7 +380,7 @@ const flatMappedEffect = pipe(
 ```
 
 notes:
-To do this we can use flatMap. flatMap takes a function that accepts an input whose type is the value of the previous Effect and returns a new Effect. The result of the flat map will be a new Effect whose value is the value of the returned Effect, and whos error and requirements are a combination of the old and new Effects.
+To do this we can use flatMap. flatMap takes a function that accepts an input whose type is the value of the previous Effect and returns a new Effect. The result of the flat map will be an Effect whose value is the value of the Effect returned by the mapping function, in this case number, and whos error and requirements are a combination of new and previous effects.
 
 ---
 
@@ -1311,7 +1311,9 @@ const program = Effect.gen(function* (_) {
 ```
 
 notes:
-One other option here would be to use Effect.either to get make the value yielded either the value or error, then use use a if/else block to handle both cases
+One other option here would be to use Effect.either to get make the value yielded either the value or error, 
+
+then use use a if/else block to handle both cases, logging the error message if the value is an error, and the successful message if its a pokemon
 
 ---
 
