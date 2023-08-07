@@ -1,5 +1,0 @@
-<script defer src="../../../../scripts/prism/prism.js"></script>
-<link href="https://unpkg.com/prism-theme-night-owl@1.0.0/style.min.css" rel="stylesheet" />
-
-add to head in 
-.obsidian\plugins\obsidian-advanced-slides\template\reveal.html

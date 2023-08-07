@@ -1,3 +1,4 @@
 .obsidian
 target/
 .trash
+node_modules
