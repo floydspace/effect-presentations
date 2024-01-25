@@ -8,7 +8,7 @@ import { EventBus } from "./abstract";
 
 interface SNSService {
   publish: (
-    params: PublishCommandInput,
+    params: PublishCommandInput
   ) => Effect.Effect<never, Cause.UnknownException, PublishCommandOutput>;
 }
 
@@ -22,7 +22,7 @@ const SNSServiceLayer = Layer.effect(
     return SNSService.of({
       publish: (params) => Effect.tryPromise(() => sns.publish(params)),
     });
-  }),
+  })
 );
 
 const EventBusLayer = Layer.effect(
@@ -31,7 +31,12 @@ const EventBusLayer = Layer.effect(
     const domainTopicArn = yield* _(Config.string("DOMAIN_TOPIC_ARN"));
     const sns = yield* _(SNSService);
 
-    const send: EventBus["send"] = (from, to, payload) =>
+    const sendMessage = <T>(
+      exchangeType: string,
+      from: string,
+      to: string,
+      payload: T
+    ) =>
       sns
         .publish({
           TopicArn: domainTopicArn,
@@ -39,29 +44,17 @@ const EventBusLayer = Layer.effect(
           MessageAttributes: {
             source: { DataType: "String", StringValue: from },
             destination: { DataType: "String", StringValue: to },
-            exchange_type: { DataType: "String", StringValue: "direct" },
-          },
-        })
-        .pipe(Effect.asUnit);
-
-    const publish: EventBus["publish"] = (from, payload) =>
-      sns
-        .publish({
-          TopicArn: domainTopicArn,
-          Message: JSON.stringify(payload),
-          MessageAttributes: {
-            source: { DataType: "String", StringValue: from },
-            destination: { DataType: "String", StringValue: "subscriber" },
-            exchange_type: { DataType: "String", StringValue: "fanout" },
+            exchange_type: { DataType: "String", StringValue: exchangeType },
           },
         })
         .pipe(Effect.asUnit);
 
     return EventBus.of({
-      send,
-      publish,
+      send: (from, to, payload) => sendMessage("direct", from, to, payload),
+      publish: (from, payload) =>
+        sendMessage("fanout", from, "subscriber", payload),
     });
-  }),
+  })
 );
 
 export const SNSEventBusImpl = Layer.provide(EventBusLayer, SNSServiceLayer);
