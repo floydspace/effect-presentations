@@ -1,0 +1,24 @@
+{
+  "name": "classic-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild --bundle src/lambda.ts --target=\"node18\" --platform=\"node\" --outfile=\"dist/index.js\" --tsconfig=\"tsconfig.json\" --alias:mongodb=mongodb/src --tree-shaking=true --main-fields=module,main --minify --metafile=dist/meta.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.499.0",
+    "@aws-sdk/client-sns": "^3.499.0",
+    "@aws-sdk/util-dynamodb": "^3.499.0",
+    "mongodb": "^6.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.131",
+    "effect-app": "workspace:^",
+    "esbuild": "^0.19.12"
+  }
+}

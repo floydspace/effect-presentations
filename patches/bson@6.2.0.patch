@@ -1,0 +1,18 @@
+diff --git a/package.json b/package.json
+index 259cdf9e4d215a9cc5b33b23c672aae6235eaab9..09826a3dafcb73f51baba924e4a0727f3a3affc0 100644
+--- a/package.json
++++ b/package.json
+@@ -76,11 +76,11 @@
+     "native": false
+   },
+   "main": "./lib/bson.cjs",
+-  "module": "./lib/bson.mjs",
++  "module": "./src/index.ts",
+   "exports": {
+     "import": {
+       "types": "./bson.d.ts",
+-      "default": "./lib/bson.mjs"
++      "default": "./src/index.ts"
+     },
+     "require": {
+       "types": "./bson.d.ts",

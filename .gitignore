@@ -2,3 +2,4 @@
 target/
 .trash
 node_modules
+dist/
