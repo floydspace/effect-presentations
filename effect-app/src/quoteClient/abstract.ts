@@ -1,4 +1,3 @@
-import { ParseResult } from "@effect/schema";
 import { Cause, Context, Effect } from "effect";
 import { Quote } from "../store";
 
@@ -7,9 +6,7 @@ export interface QuoteClient {
     symbol: string
   ) => Effect.Effect<
     never,
-    | Cause.UnknownException
-    | Cause.NoSuchElementException
-    | ParseResult.ParseError,
+    Cause.UnknownException | Cause.NoSuchElementException,
     Quote
   >;
 }

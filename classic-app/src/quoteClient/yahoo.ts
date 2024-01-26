@@ -39,11 +39,11 @@ const responseSchema = z
   .object({ chart: z.object({ result: z.array(chartResultSchema) }) })
   .transform((value) => value.chart.result[0]);
 
-export class YahooQuoteClient implements QuoteClient {
-  private readonly baseUrl = "https://query2.finance.yahoo.com/v8";
+const baseUrl = "https://query2.finance.yahoo.com/v8";
 
+export class YahooQuoteClient implements QuoteClient {
   async lastPrice(symbol: string) {
-    const url = `${this.baseUrl}/finance/chart/${symbol}?interval=1d`;
+    const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
     const res = await fetch(url);
     const json = await res.json();
     return responseSchema.parse(json);
