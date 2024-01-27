@@ -2,6 +2,7 @@ import { Schema } from "@effect/schema";
 import { Effect, Layer } from "effect";
 import { Quote } from "../store";
 import { QuoteClient } from "./abstract";
+import { effectfulFetch } from "./helper";
 
 const YahooQuote = Schema.struct({
   close: Schema.array(Schema.number),
@@ -56,8 +57,7 @@ const baseUrl = "https://query2.finance.yahoo.com/v8";
 const lastPrice = (symbol: string) =>
   Effect.gen(function* (_) {
     const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
-    const res = yield* _(Effect.tryPromise(() => fetch(url)));
-    const json = yield* _(Effect.tryPromise(() => res.json()));
+    const json = yield* _(effectfulFetch(url));
     return yield* _(Schema.parseOption(YahooResponse)(json));
   });
 

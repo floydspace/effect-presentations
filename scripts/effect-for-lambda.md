@@ -806,7 +806,8 @@ const combinedEffect = Effect.all([effect, effect]);
 We can turn our `lastPrice` function from
 
 ```ts
-const lastPrice: Promise<Quote | null> = (symbol: string) => {
+// Promise<Quote | null>
+const lastPrice = (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
@@ -816,13 +817,9 @@ const lastPrice: Promise<Quote | null> = (symbol: string) => {
 
 to
 
-<!-- prettier-ignore -->
-```ts
-const lastPrice: Effect.Effect<
-  never,
-  Cause.UnknownException | Cause.NoSuchElementException | ParseResult.ParseError,
-  Quote
-> = (symbol: string) => {
+```ts [|5|6|7|1]
+// Effect.Effect<never, Cause.UnknownException | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   return pipe(
     Effect.tryPromise(() => fetch(url)),
@@ -837,7 +834,8 @@ const lastPrice: Effect.Effect<
 Another approach using generators
 
 ```ts
-const lastPrice: Promise<Quote | null> = (symbol: string) => {
+// Promise<Quote | null>
+const lastPrice = (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
@@ -848,15 +846,79 @@ const lastPrice: Promise<Quote | null> = (symbol: string) => {
 to
 
 <!-- prettier-ignore -->
-```ts
-const lastPrice: Effect.Effect<
-  never,
-  Cause.UnknownException | Cause.NoSuchElementException | ParseResult.ParseError,
-  Quote
-> = (symbol: string) => Effect.gen(function* (_) {
+```ts [|4|5|6|1]
+// Effect.Effect<never, Cause.UnknownException | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = yield* _(Effect.tryPromise(() => fetch(url)));
   const json = yield* _(Effect.tryPromise(() => res.json()));
   return yield* _(Schema.parse(ResponseSchema)(json));
+}); 
+```
+
+<div>
+<code>Effect.flatMap(effect)</code> <b style="color: blue">---></b> <code>yield* _(effect)</code>
+</div>
+
+--
+
+Handling errors
+
+<!-- prettier-ignore -->
+```ts [|8-13|10|1-3,5,11|18-30|18|19-24|25-28|17,29]
+class FetchError extends Data.TaggedError("FetchError")<{
+  message: string;
+}> {}
+
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(
+    Effect.tryPromise({
+      try: () => fetch(url).then((res) => res.json()),
+      catch: () => new FetchError({ message: `Failed to fetch ${url}` }),
+    })
+  );
+  return yield* _(Schema.parse(ResponseSchema)(json));
 });
+
+// Effect.Effect<never, never, Quote | null>
+const program = lastPrice("NN.AS").pipe(
+  Effect.catchTags({
+    FetchError: (error: FetchError) => {
+      console.error(error.message);
+      return Effect.succeed(null);
+    },
+  }),
+  Effect.catchAll((error: ParseResult.ParseError) => {
+    console.error(error.message);
+    return Effect.succeed(null);
+  }),
+  // Effect.orDie
+);
+```
+
+--
+
+Running `Effect`s
+
+<!-- prettier-ignore -->
+```ts [1-2|4-5|7-8|10-11|13-14|16-17]
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const program = lastPrice("NN.AS");
+
+// Promise<Quote>
+const promise = Effect.runPromise(program);
+
+// Promise<Exit<FetchError | ParseResult.ParseError, Quote>>
+const promiseExit = Effect.runPromiseExit(program);
+
+// Quote
+const quote = Effect.runSync(program);
+
+// Exit<FetchError | ParseResult.ParseError, Quote>
+const quoteExit = Effect.runSyncExit(program);
+
+// RuntimeFiber<FetchError | ParseResult.ParseError, Quote>
+Effect.runFork(program);
 ```
