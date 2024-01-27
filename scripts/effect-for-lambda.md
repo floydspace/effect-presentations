@@ -1,7 +1,7 @@
 ---
 theme: css/nn.css
 highlightTheme: css/github-dark-default.css
-transition: concave
+# transition: concave
 ---
 
 <img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
@@ -634,7 +634,7 @@ Wait, what? Another one dependency? <!-- .element: class="fragment" data-fragmen
 - Logging + Tracing: pino / winston / opentelemetry <!-- .element: class="fragment"  -->
 - Caching + Batching: dataloader <!-- .element: class="fragment"  -->
 - Pattern Matching: ts-pattern <!-- .element: class="fragment"  -->
-- Dependency Injection: inversify / tsyringe / typedi <!-- .element: class="fragment"  -->
+- Dependency Management: inversify / tsyringe / typedi <!-- .element: class="fragment"  -->
 - Utilities: ramda / lodash / underscore <!-- .element: class="fragment"  -->
 - Probably others I don't know about <!-- .element: class="fragment"  -->
   </grid>
@@ -902,7 +902,6 @@ const program = lastPrice("NN.AS").pipe(
 
 Running `Effect`s
 
-<!-- prettier-ignore -->
 ```ts [1-2|4-5|7-8|10-11|13-14|16-17]
 // Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
 const program = lastPrice("NN.AS");
@@ -921,4 +920,238 @@ const quoteExit = Effect.runSyncExit(program);
 
 // RuntimeFiber<FetchError | ParseResult.ParseError, Quote>
 Effect.runFork(program);
+```
+
+--
+
+The end-to-end program example
+
+<!-- prettier-ignore -->
+```ts [|1-3|5-10|12-17|19-24]
+class FetchError extends Data.TaggedError("FetchError")<{
+  message: string;
+}> {}
+
+// Effect.Effect<never, FetchError, unknown>
+const effectfulFetch = (...args: Parameters<typeof fetch>) =>
+  Effect.tryPromise({
+    try: () => fetch(...args).then((res) => res.json()),
+    catch: () => new FetchError({ message: `Failed to fetch ${args[0]}` }),
+  });
+
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(effectfulFetch(url));
+  return yield* _(Schema.parse(ResponseSchema)(json));
+});
+
+export const handler = async (event) => {
+  // Effect.Effect<never, never, Quote>
+  const program = lastPrice("NN.AS").pipe(Effect.orDie);
+
+  return await Effect.runPromise(program);
+};
+```
+
+---
+
+Dependency Management (Context & Layers)
+
+```ts
+// Overly simplified
+type Effect<R, E, A> = (context: R) => E | A;
+```
+
+- `R` - Dependencies
+
+<!-- prettier-ignore -->
+```ts [|14]
+import { Effect } from "effect";
+
+const baseUrl = "https://query2.finance.yahoo.com/v8";
+
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(effectfulFetch(url));
+  return yield* _(Schema.parse(ResponseSchema)(json));
+});
+ 
+export const handler = async (event) => {
+  // Effect.Effect<never, never, Quote>
+  const program = lastPrice("NN.AS").pipe(Effect.orDie);
+ 
+  return await program.pipe(Effect.runPromise);
+};
+```
+
+<!-- .element: class="fragment" data-fragment-index="1" -->
+
+--
+
+Let's define a service
+
+```ts
+interface QuoteClient {
+  lastPrice: (
+    symbol: string
+  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+}
+```
+
+```ts
+import { Context } from "effect";
+
+// Context.Tag<QuoteClient, QuoteClient>
+const QuoteClient = Context.Tag<QuoteClient>();
+```
+
+<!-- .element: class="fragment" data-fragment-index="1" -->
+
+<div>Think <code>Context.Tag</code> of being like registering a service interface in a global context</div> <!-- .element: class="fragment" data-fragment-index="2" -->
+
+--
+
+Using `Tag`s
+
+<!-- prettier-ignore -->
+```ts [|3-8|14|15|13|19-21]
+import { Effect, Context } from "effect";
+
+interface QuoteClient {
+  lastPrice: (
+    symbol: string
+  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+}
+const QuoteClient = Context.Tag<QuoteClient>();
+
+// ...
+ 
+export const handler = async (event) => {
+  // Effect.Effect<QuoteClient, never, Quote>
+  const program = QuoteClient.pipe(
+    Effect.flatMap((client) => client.lastPrice("NN.AS")),
+    Effect.orDie,
+  )
+ 
+  // Type 'QuoteClient' is not assignable to type 'never'.
+  return await program.pipe(Effect.runPromise);
+  //                        ~~~~~~~~~~~~~~~~~
+};
+```
+
+--
+
+Providing service for `Tag`s
+
+<!-- prettier-ignore -->
+```ts [25]
+import { Effect, Context } from "effect";
+
+interface QuoteClient {
+  lastPrice: (
+    symbol: string
+  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+}
+const QuoteClient = Context.Tag<QuoteClient>();
+
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(effectfulFetch(url));
+  return yield* _(Schema.parse(ResponseSchema)(json));
+});
+
+export const handler = async (event) => {
+  // Effect.Effect<QuoteClient, never, Quote>
+  const program = QuoteClient.pipe(
+    Effect.flatMap((client) => client.lastPrice("NN.AS")),
+    Effect.orDie,
+  );
+
+  return await program.pipe(
+    Effect.provideService(QuoteClient, { lastPrice }),
+    Effect.runPromise
+  );
+};
+```
+
+--
+
+Providing layer
+
+<!-- prettier-ignore -->
+```ts [19,29||10,14]
+import { Effect, Context } from "effect";
+
+interface QuoteClient {
+  lastPrice: (
+    symbol: string
+  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+}
+const QuoteClient = Context.Tag<QuoteClient>();
+
+const baseUrl = "https://query2.finance.yahoo.com/v8";
+
+// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(effectfulFetch(url));
+  return yield* _(Schema.parse(ResponseSchema)(json));
+});
+
+export const YahooQuoteClientImpl = Layer.succeed(QuoteClient, { lastPrice });
+
+export const handler = async (event) => {
+  // Effect.Effect<QuoteClient, never, Quote>
+  const program = QuoteClient.pipe(
+    Effect.flatMap((client) => client.lastPrice("NN.AS")),
+    Effect.orDie,
+  );
+
+  return await program.pipe(
+    Effect.provide(YahooQuoteClientImpl),
+    Effect.runPromise
+  );
+};
+```
+
+--
+
+Configuration Management
+
+<!-- prettier-ignore -->
+```ts [|9,10|5|4|15-17|15-17,28]
+import { Effect, Config } from "effect";
+
+// Effect.Effect<
+//   never,
+//   FetchError | ParseResult.ParseError | ConfigError.ConfigError,
+//   Quote
+// >
+const lastPrice = (symbol: string) => Effect.gen(function* (_) {
+  const baseUrl = yield* _(Config.string("YAHOO_BASE_URL"));
+  const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+  const json = yield* _(effectfulFetch(url));
+  return yield* _(Schema.parse(ResponseSchema)(json));
+});
+
+const ConfigImpl = Layer.setConfigProvider(
+  ConfigProvider.fromMap(new Map([["YAHOO_BASE_URL", "localhost"]]))
+);
+
+export const handler = async (event) => {
+  // Effect.Effect<QuoteClient, never, Quote>
+  const program = QuoteClient.pipe(
+    Effect.flatMap((client) => client.lastPrice("NN.AS")),
+    Effect.orDie
+  );
+
+  return await program.pipe(
+    Effect.provide(YahooQuoteClientImpl),
+    Effect.provide(ConfigImpl),
+    Effect.runPromise
+  );
+};
 ```
