@@ -11,7 +11,11 @@ patchedDependencies:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      typescript:
+        specifier: ^5.1.6
+        version: 5.3.3
 
   classic-app:
     dependencies:
@@ -34,9 +38,6 @@ importers:
       '@types/aws-lambda':
         specifier: ^8.10.131
         version: 8.10.131
-      effect-app:
-        specifier: workspace:^
-        version: link:../effect-app
       esbuild:
         specifier: ^0.19.12
         version: 0.19.12
@@ -52,6 +53,9 @@ importers:
       '@aws-sdk/util-dynamodb':
         specifier: ^3.499.0
         version: 3.499.0(@aws-sdk/client-dynamodb@3.499.0)
+      '@effect-aws/lambda':
+        specifier: ^1.0.0
+        version: 1.0.0(effect@2.2.2)
       '@effect/schema':
         specifier: ^0.59.1
         version: 0.59.1(effect@2.2.2)(fast-check@3.15.0)
@@ -675,6 +679,14 @@ packages:
     resolution: {integrity: sha512-UvFa/vR+e19XookZF8RzFZBrw2EUkQWxiBW0yYQAhvk3C+QVGl0H3ouca8LDBlBfQKXwmW3huo/59H8rwb1wJw==}
     dependencies:
       tslib: 2.6.2
+    dev: false
+
+  /@effect-aws/lambda@1.0.0(effect@2.2.2):
+    resolution: {integrity: sha512-9S08ceUpNOuXsQEVxqmjD48jPgVduQly7+rZymM23jZPJ+ahRjVm8odGNoW0ScmTvz4MEC3wGDMxw59yxbtOkw==}
+    peerDependencies:
+      effect: ^2.0.1
+    dependencies:
+      effect: 2.2.2
     dev: false
 
   /@effect/schema@0.59.1(effect@2.2.2)(fast-check@3.15.0):

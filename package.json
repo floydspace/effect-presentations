@@ -5,5 +5,8 @@
     "patchedDependencies": {
       "bson@6.2.0": "patches/bson@6.2.0.patch"
     }
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
   }
 }

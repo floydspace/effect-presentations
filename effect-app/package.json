@@ -13,6 +13,7 @@
     "@aws-sdk/client-dynamodb": "^3.499.0",
     "@aws-sdk/client-sns": "^3.499.0",
     "@aws-sdk/util-dynamodb": "^3.499.0",
+    "@effect-aws/lambda": "^1.0.0",
     "@effect/schema": "^0.59.1",
     "effect": "^2.2.2",
     "mongodb": "^6.3.0"

@@ -1,8 +1,8 @@
+import { EffectHandler, makeLambda } from "@effect-aws/lambda";
 import { Schema } from "@effect/schema";
 import type { SNSEvent } from "aws-lambda";
 import { Console, Effect, Layer } from "effect";
 import { EventBus, SNSEventBusImpl } from "./bus";
-import { EffectHandler, makeLambda } from "./helper";
 import { QuoteClient, YahooQuoteClientImpl } from "./quoteClient";
 import { InstrumentStore, MongoDbInstrumentStoreImpl } from "./store";
 

@@ -635,7 +635,8 @@ Wait, what? Another one dependency? <!-- .element: class="fragment" data-fragmen
 - Caching + Batching: dataloader <!-- .element: class="fragment"  -->
 - Pattern Matching: ts-pattern <!-- .element: class="fragment"  -->
 - Dependency Management: inversify / tsyringe / typedi <!-- .element: class="fragment"  -->
-- Utilities: ramda / lodash / underscore <!-- .element: class="fragment"  -->
+- Utilities: ramda / lodash / underscore / fp-ts <!-- .element: class="fragment"  -->
+- Reactive Programming: rxjs <!-- .element: class="fragment"  -->
 - Probably others I don't know about <!-- .element: class="fragment"  -->
   </grid>
 
@@ -1122,7 +1123,7 @@ export const handler = async (event) => {
 Configuration Management
 
 <!-- prettier-ignore -->
-```ts [|9,10|5|4|15-17|15-17,28]
+```ts [9,10|5|4|15-17|15-17,27]
 import { Effect, Config } from "effect";
 
 // Effect.Effect<
@@ -1149,9 +1150,447 @@ export const handler = async (event) => {
   );
 
   return await program.pipe(
-    Effect.provide(YahooQuoteClientImpl),
-    Effect.provide(ConfigImpl),
+    Effect.provide(Layer.merge(YahooQuoteClientImpl, ConfigImpl)),
     Effect.runPromise
   );
 };
 ```
+
+--
+
+`Effect` Runtime System
+
+```ts [|1-2|4-5|7-10|19]
+// Layer.Layer<never, never, QuoteClient>
+const LambdaLayer = Layer.merge(YahooQuoteClientImpl, ConfigImpl);
+
+// Scope.CloseableScope
+const scope = Effect.runSync(Scope.make());
+
+// Runtime.Runtime<QuoteClient>
+const lambdaRuntime = Effect.runSync(
+  Layer.toRuntime(LambdaLayer).pipe(Scope.extend(scope))
+);
+
+export const handler = async () => {
+  // Effect.Effect<QuoteClient, never, Quote>
+  const program = QuoteClient.pipe(
+    Effect.flatMap((client) => client.lastPrice("NN.AS")),
+    Effect.orDie
+  );
+
+  return await program.pipe(Runtime.runPromise(lambdaRuntime));
+};
+```
+
+<div>in fact the <strong><code>Effect.runPromise</code></strong> is just a shorthand for <strong><code>Runtime.runPromise(defaultRuntime)</code></strong>.</div> <!-- .element: class="fragment" -->
+
+---
+
+##### Conclusion
+
+1. Errors
+   - we still need to handle errors in multiple places, but `Effect` and `TypeScript` help us by showing all the expected error types
+   - `Effect` helps us to unify errors and provides mechanisms of handling in type safe manner
+   - errors are typed
+2. Dependencies
+   - loosely coupled to the implementation by using `Tag`s and `Layer`s
+   - easy to substitute by providing `Layer`s with mocked implementation for tests
+   - easy to replace by providing different `Layer` implementing the same `Tag`
+
+---
+
+Final Effect app
+
+```ts [345-368|301-304|346|347|343,352-355|357-359|361|362|364|365|368|371-375,377|332-341]
+import {
+  PublishCommandInput,
+  PublishCommandOutput,
+  SNS,
+} from "@aws-sdk/client-sns";
+import { ParseResult, Schema } from "@effect/schema";
+import type { Context as LambdaContext, SNSEvent } from "aws-lambda";
+import {
+  Cause,
+  Config,
+  Console,
+  Context,
+  Data,
+  Effect,
+  Exit,
+  Layer,
+  Runtime,
+  Scope,
+  pipe,
+} from "effect";
+import { Db, MongoClient, MongoClientOptions, ObjectId } from "mongodb";
+
+const ObjectIdFromString = Schema.transformOrFail(
+  Schema.union(Schema.string, Schema.number),
+  Schema.instanceOf(ObjectId),
+  (s, _, ast) => {
+    try {
+      return ParseResult.succeed(new ObjectId(s));
+    } catch (e: any) {
+      return ParseResult.fail(ParseResult.type(ast, s, e.message));
+    }
+  },
+  (u, _, ast) => {
+    try {
+      return ParseResult.succeed(u.toHexString());
+    } catch (e: any) {
+      return ParseResult.fail(ParseResult.type(ast, u, e.message));
+    }
+  }
+);
+
+const Quote = Schema.struct({
+  timestamp: Schema.number,
+  close: Schema.number,
+  high: Schema.number,
+  low: Schema.number,
+  open: Schema.number,
+  volume: Schema.number,
+});
+type Quote = Schema.Schema.To<typeof Quote>;
+
+const InstrumentDocument = Schema.struct({
+  id: Schema.string,
+  symbol: Schema.string,
+  name: Schema.string,
+  isin: Schema.string,
+  quote: Quote,
+  deleted_at: Schema.optional(Schema.nullable(Schema.string)),
+});
+type InstrumentDocument = Schema.Schema.To<typeof InstrumentDocument>;
+
+interface InstrumentStore {
+  getById: (
+    id: string
+  ) => Effect.Effect<
+    never,
+    | Cause.UnknownException
+    | Cause.NoSuchElementException
+    | ParseResult.ParseError,
+    InstrumentDocument
+  >;
+  updateQuote: (
+    id: string,
+    quote: Quote
+  ) => Effect.Effect<
+    never,
+    Cause.UnknownException | ParseResult.ParseError,
+    void
+  >;
+}
+
+const InstrumentStore = Context.Tag<InstrumentStore>();
+
+const DatabaseTag = Context.Tag<Db>();
+
+const mongoDbConnect = (mongodbUrl: string, options?: MongoClientOptions) =>
+  Effect.logInfo("Connecting to MongoDB").pipe(
+    Effect.flatMap(() =>
+      Effect.tryPromise(() => MongoClient.connect(mongodbUrl, options))
+    ),
+    Effect.tap(() => Effect.logInfo("Connected to MongoDB"))
+  );
+
+const mongoDbClose = (force?: boolean) => (client: MongoClient) =>
+  Effect.logInfo("Closing MongoDB connection").pipe(
+    Effect.flatMap(() => Effect.promise(() => client.close(force))),
+    Effect.tap(() => Effect.logInfo("MongoDB connection closed"))
+  );
+
+const mongoDbImpl = (mongodbUrl: string, options?: MongoClientOptions) =>
+  pipe(
+    Effect.acquireRelease(mongoDbConnect(mongodbUrl, options), mongoDbClose()),
+    Effect.flatMap((client) => Effect.try(() => client.db()))
+  );
+
+const MongoDbLayer = Layer.scoped(
+  DatabaseTag,
+  Config.string("MONGODB_URL").pipe(Effect.flatMap(mongoDbImpl))
+);
+
+const InstrumentStoreLayer = Layer.effect(
+  InstrumentStore,
+  Effect.gen(function* (_) {
+    const db = yield* _(DatabaseTag);
+
+    const getById: InstrumentStore["getById"] = (id) =>
+      Schema.decode(ObjectIdFromString)(id).pipe(
+        Effect.flatMap((_id) =>
+          Effect.tryPromise(() =>
+            db
+              .collection<InstrumentDocument>("instruments")
+              .findOne({ _id, deleted_at: null })
+          )
+        ),
+        Effect.flatMap(Effect.fromNullable),
+        Effect.flatMap(Schema.decode(InstrumentDocument))
+      );
+
+    const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
+      Schema.decode(ObjectIdFromString)(id).pipe(
+        Effect.flatMap((_id) =>
+          Effect.tryPromise(() =>
+            db
+              .collection("instruments")
+              .findOneAndUpdate({ _id }, { $set: { quote } })
+          )
+        ),
+        Effect.asUnit
+      );
+
+    return InstrumentStore.of({
+      getById,
+      updateQuote,
+    });
+  })
+);
+
+const MongoDbInstrumentStoreImpl = Layer.provide(
+  InstrumentStoreLayer,
+  MongoDbLayer
+);
+
+interface QuoteClient {
+  lastPrice: (
+    symbol: string
+  ) => Effect.Effect<never, FetchError | Cause.NoSuchElementException, Quote>;
+}
+
+const QuoteClient = Context.Tag<QuoteClient>();
+
+class FetchError extends Data.TaggedError("FetchError")<{
+  message: string;
+}> {}
+
+const effectfulFetch = (...args: Parameters<typeof fetch>) =>
+  Effect.tryPromise({
+    try: () => fetch(...args).then((res) => res.json()),
+    catch: () => new FetchError({ message: `Failed to fetch ${args[0]}` }),
+  });
+
+const YahooQuote = Schema.struct({
+  close: Schema.array(Schema.number),
+  high: Schema.array(Schema.number),
+  low: Schema.array(Schema.number),
+  open: Schema.array(Schema.number),
+  volume: Schema.array(Schema.number),
+});
+
+const YahooChartResult = Schema.struct({
+  indicators: Schema.struct({ quote: Schema.array(YahooQuote) }),
+  timestamp: Schema.array(Schema.number),
+});
+
+const YahooResponse = Schema.transform(
+  Schema.struct({
+    chart: Schema.struct({ result: Schema.array(YahooChartResult) }),
+  }),
+  Quote,
+  (r) => ({
+    timestamp: r.chart.result[0].timestamp[0],
+    close: r.chart.result[0].indicators.quote[0].close[0],
+    high: r.chart.result[0].indicators.quote[0].high[0],
+    low: r.chart.result[0].indicators.quote[0].low[0],
+    open: r.chart.result[0].indicators.quote[0].open[0],
+    volume: r.chart.result[0].indicators.quote[0].volume[0],
+  }),
+  (r) => ({
+    chart: {
+      result: [
+        {
+          indicators: {
+            quote: [
+              {
+                close: [r.close],
+                high: [r.high],
+                low: [r.low],
+                open: [r.open],
+                volume: [r.volume],
+              },
+            ],
+          },
+          timestamp: [r.timestamp],
+        },
+      ],
+    },
+  })
+);
+
+const baseUrl = "https://query2.finance.yahoo.com/v8";
+
+const lastPrice = (symbol: string) =>
+  Effect.gen(function* (_) {
+    const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
+    const json = yield* _(effectfulFetch(url));
+    return yield* _(Schema.parseOption(YahooResponse)(json));
+  });
+
+const YahooQuoteClientImpl = Layer.succeed(
+  QuoteClient,
+  QuoteClient.of({ lastPrice })
+);
+
+interface EventBus {
+  send: <T>(
+    from: string,
+    to: string,
+    payload: T
+  ) => Effect.Effect<never, Cause.UnknownException, void>;
+
+  publish: <T>(
+    from: string,
+    payload: T
+  ) => Effect.Effect<never, Cause.UnknownException, void>;
+}
+
+const EventBus = Context.Tag<EventBus>();
+
+interface SNSService {
+  publish: (
+    params: PublishCommandInput
+  ) => Effect.Effect<never, Cause.UnknownException, PublishCommandOutput>;
+}
+
+const SNSService = Context.Tag<SNSService>();
+
+const SNSServiceLayer = Layer.effect(
+  SNSService,
+  Effect.gen(function* (_) {
+    const sns = yield* _(Effect.try(() => new SNS()));
+
+    return SNSService.of({
+      publish: (params) => Effect.tryPromise(() => sns.publish(params)),
+    });
+  })
+);
+
+const EventBusLayer = Layer.effect(
+  EventBus,
+  Effect.gen(function* (_) {
+    const domainTopicArn = yield* _(Config.string("DOMAIN_TOPIC_ARN"));
+    const sns = yield* _(SNSService);
+
+    const sendMessage = <T>(
+      exchangeType: string,
+      from: string,
+      to: string,
+      payload: T
+    ) =>
+      sns
+        .publish({
+          TopicArn: domainTopicArn,
+          Message: JSON.stringify(payload),
+          MessageAttributes: {
+            source: { DataType: "String", StringValue: from },
+            destination: { DataType: "String", StringValue: to },
+            exchange_type: { DataType: "String", StringValue: exchangeType },
+          },
+        })
+        .pipe(Effect.asUnit);
+
+    return EventBus.of({
+      send: (from, to, payload) => sendMessage("direct", from, to, payload),
+      publish: (from, payload) =>
+        sendMessage("fanout", from, "subscriber", payload),
+    });
+  })
+);
+
+const SNSEventBusImpl = Layer.provide(EventBusLayer, SNSServiceLayer);
+
+type EffectHandler<T, R, E = never, A = void> = (
+  event: T,
+  context: LambdaContext
+) => Effect.Effect<R, E, A>;
+
+const fromLayer = <R, E>(layer: Layer.Layer<never, E, R>) => {
+  const scope = Effect.runSync(Scope.make());
+  const runtime = Layer.toRuntime(layer).pipe(
+    Scope.extend(scope),
+    Effect.runPromise
+  );
+  const destroy = Scope.close(scope, Exit.unit);
+
+  const signalHandler: NodeJS.SignalsListener = (signal) => {
+    Effect.runFork(
+      Effect.gen(function* (_) {
+        yield* _(Console.log(`[runtime] ${signal} received`));
+        yield* _(Console.log("[runtime] cleaning up"));
+        yield* _(destroy);
+        yield* _(Console.log("[runtime] exiting"));
+        yield* _(Effect.sync(() => process.exit(0)));
+      })
+    );
+  };
+
+  process.on("SIGTERM", signalHandler);
+  process.on("SIGINT", signalHandler);
+
+  return runtime;
+};
+
+function makeLambda<T, R, E1, E2, A>(
+  handler: EffectHandler<T, R, E1, A>,
+  globalLayer: Layer.Layer<never, E2, R>
+) {
+  const runtimePromise = fromLayer(globalLayer);
+  return async (event: T, context: LambdaContext) => {
+    const runPromise = Runtime.runPromise(await runtimePromise);
+    return handler(event, context).pipe(runPromise);
+  };
+}
+
+const Message = Schema.struct({ instrumentId: Schema.string });
+
+const effectHandler: EffectHandler<
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore
+> = (event) =>
+  Effect.gen(function* (_) {
+    yield* _(Console.log(`Received event: `, event));
+
+    const decodeMessage = Schema.decode(Schema.parseJson(Message));
+    const { instrumentId } = yield* _(
+      decodeMessage(event.Records[0].Sns.Message)
+    );
+
+    const bus = yield* _(EventBus);
+    const client = yield* _(QuoteClient);
+    const store = yield* _(InstrumentStore);
+
+    const instrument = yield* _(store.getById(instrumentId));
+    const quote = yield* _(client.lastPrice(instrument.symbol));
+
+    yield* _(store.updateQuote(instrumentId, quote));
+    yield* _(bus.publish("quote_updated", { instrumentId, quote }));
+
+    yield* _(Console.log(`Successfully processed event`));
+  }).pipe(Effect.orDie);
+
+// Layer.Layer<never, Cause.UnknownException | ConfigError, InstrumentStore | QuoteClient | EventBus>
+const LambdaLive = Layer.mergeAll(
+  SNSEventBusImpl,
+  YahooQuoteClientImpl,
+  MongoDbInstrumentStoreImpl
+);
+
+module.exports.handler = makeLambda(effectHandler, LambdaLive);
+```
+
+---
+
+## Q&A
+
+---
+
+Links
+
+- [Effect](https://www.effect.website/)
+- [Effect Docs](https://effect-ts.github.io/effect/)
+- [Effect Github](https://github.com/Effect-TS/effect)
+- [Effectful AWS Github](https://github.com/floydspace/effect-aws)

@@ -18,7 +18,6 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.131",
-    "effect-app": "workspace:^",
     "esbuild": "^0.19.12"
   }
 }
