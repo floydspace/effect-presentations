@@ -53,6 +53,12 @@ importers:
       '@aws-sdk/util-dynamodb':
         specifier: ^3.499.0
         version: 3.499.0(@aws-sdk/client-dynamodb@3.499.0)
+      '@effect-aws/client-dynamodb':
+        specifier: ^1.0.0
+        version: 1.0.0(effect@2.2.2)
+      '@effect-aws/client-sns':
+        specifier: ^1.0.0
+        version: 1.0.0(effect@2.2.2)
       '@effect-aws/lambda':
         specifier: ^1.0.0
         version: 1.0.0(effect@2.2.2)
@@ -679,6 +685,30 @@ packages:
     resolution: {integrity: sha512-UvFa/vR+e19XookZF8RzFZBrw2EUkQWxiBW0yYQAhvk3C+QVGl0H3ouca8LDBlBfQKXwmW3huo/59H8rwb1wJw==}
     dependencies:
       tslib: 2.6.2
+    dev: false
+
+  /@effect-aws/client-dynamodb@1.0.0(effect@2.2.2):
+    resolution: {integrity: sha512-dsReFU3OBqcjKREMGtK+xG1ERsGK4b0Gg0e4U1drWlziK5676mFeCY+YfillgGMN14LqsADeUGVRZQc1kJzIDA==}
+    peerDependencies:
+      effect: ^2.0.1
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.499.0
+      '@aws-sdk/types': 3.496.0
+      effect: 2.2.2
+    transitivePeerDependencies:
+      - aws-crt
+    dev: false
+
+  /@effect-aws/client-sns@1.0.0(effect@2.2.2):
+    resolution: {integrity: sha512-2/0KzKXfwUl5jSvDVGxb+bJctoPb8RJR0PQ7909/Rg+tGYgxuXKnWEoMFcCGyqaU9V/zgNgR7Lw5XB1v3AyKKw==}
+    peerDependencies:
+      effect: ^2.0.1
+    dependencies:
+      '@aws-sdk/client-sns': 3.499.0
+      '@aws-sdk/types': 3.496.0
+      effect: 2.2.2
+    transitivePeerDependencies:
+      - aws-crt
     dev: false
 
   /@effect-aws/lambda@1.0.0(effect@2.2.2):

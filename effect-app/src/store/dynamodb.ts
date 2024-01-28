@@ -1,37 +1,11 @@
 import {
-  DynamoDB,
-  type GetItemCommandInput,
-  type GetItemCommandOutput,
-  type UpdateItemCommandInput,
-  type UpdateItemCommandOutput,
-} from "@aws-sdk/client-dynamodb";
+  DefaultDynamoDBServiceLayer,
+  DynamoDBService,
+} from "@effect-aws/client-dynamodb";
 import { Schema } from "@effect/schema";
-import { Cause, Config, Context, Effect, Layer } from "effect";
+import { Cause, Config, Effect, Layer } from "effect";
 import { Marshaller } from "../schema";
 import { InstrumentDocument, InstrumentStore } from "./abstract";
-
-interface DynamoDBService {
-  getItem: (
-    params: GetItemCommandInput
-  ) => Effect.Effect<never, Cause.UnknownException, GetItemCommandOutput>;
-  updateItem: (
-    params: UpdateItemCommandInput
-  ) => Effect.Effect<never, Cause.UnknownException, UpdateItemCommandOutput>;
-}
-
-const DynamoDBService = Context.Tag<DynamoDBService>();
-
-const DynamoDBServiceLayer = Layer.effect(
-  DynamoDBService,
-  Effect.gen(function* (_) {
-    const ddb = yield* _(Effect.try(() => new DynamoDB()));
-
-    return DynamoDBService.of({
-      getItem: (params) => Effect.tryPromise(() => ddb.getItem(params)),
-      updateItem: (params) => Effect.tryPromise(() => ddb.updateItem(params)),
-    });
-  })
-);
 
 const InstrumentStoreLayer = Layer.effect(
   InstrumentStore,
@@ -45,7 +19,8 @@ const InstrumentStoreLayer = Layer.effect(
         Effect.flatMap((response) => Effect.fromNullable(response.Item)),
         Effect.flatMap(
           Schema.parse(Marshaller.pipe(Schema.compose(InstrumentDocument)))
-        )
+        ),
+        Effect.catchAll((e) => new Cause.UnknownException(e))
       );
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, q) =>
@@ -62,6 +37,7 @@ const InstrumentStoreLayer = Layer.effect(
             ExpressionAttributeValues: { ":quote": { M: quote } },
           })
         ),
+        Effect.catchAll((e) => new Cause.UnknownException(e)),
         Effect.asUnit
       );
 
@@ -74,5 +50,5 @@ const InstrumentStoreLayer = Layer.effect(
 
 export const DynamoDbInstrumentStoreImpl = Layer.provide(
   InstrumentStoreLayer,
-  DynamoDBServiceLayer
+  DefaultDynamoDBServiceLayer
 );
