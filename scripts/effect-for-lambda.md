@@ -1202,7 +1202,7 @@ export const handler = async () => {
 
 Final Effect app
 
-```ts [345-368|301-304|346|347|343,352-355|357-359|361|362|364|365|368|371-375,377|332-341]
+```ts [345-368|301-304|346|347|343,352-355|357-359|361-362,364-365|368|371-375,377|332-341]
 import {
   PublishCommandInput,
   PublishCommandOutput,
@@ -1581,6 +1581,34 @@ const LambdaLive = Layer.mergeAll(
 
 module.exports.handler = makeLambda(effectHandler, LambdaLive);
 ```
+
+---
+
+<grid drag="100 45" drop="0 0">
+#### Pros & Cons
+</grid>
+
+<grid drag="50 45" drop="0 30">
+Pros:
+
+- Brings next level of type safety <!-- .element: class="fragment"  -->
+- Composable and portable <!-- .element: class="fragment"  -->
+- Scalable implementation <!-- .element: class="fragment"  -->
+- Easy to test and mock <!-- .element: class="fragment"  -->
+- One tool to rule them all <!-- .element: class="fragment"  -->
+- Good documentation and community support <!-- .element: class="fragment"  -->
+  </grid>
+
+<grid drag="70 45" drop="50 30">
+Cons:
+
+- Steep learning curve <!-- .element: class="fragment"  -->
+- A bit less readable for beginners <!-- .element: class="fragment"  -->
+- Community is still too young <!-- .element: class="fragment"  -->
+- Type safety comes with a cost of verbosity <!-- .element: class="fragment"  -->
+- Opinionated <!-- .element: class="fragment"  -->
+- Brings extra ~200kb to the bundle size (minified & uncompressed) <!-- .element: class="fragment"  -->
+  </grid>
 
 ---
 
