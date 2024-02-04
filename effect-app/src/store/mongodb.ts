@@ -1,5 +1,5 @@
 import { Schema } from "@effect/schema";
-import { Config, Context, Effect, Layer, pipe } from "effect";
+import { Config, Context, Effect, Layer } from "effect";
 import { Db, MongoClient, MongoClientOptions } from "mongodb";
 import { ObjectIdFromString } from "../schema";
 import { InstrumentDocument, InstrumentStore } from "./abstract";
@@ -10,24 +10,27 @@ export const mongoDbConnect = (
   mongodbUrl: string,
   options?: MongoClientOptions
 ) =>
-  Effect.logInfo("Connecting to MongoDB").pipe(
-    Effect.flatMap(() =>
+  Effect.gen(function* (_) {
+    yield* _(Effect.logInfo("Connecting to MongoDB"));
+    const client = yield* _(
       Effect.tryPromise(() => MongoClient.connect(mongodbUrl, options))
-    ),
-    Effect.tap(() => Effect.logInfo("Connected to MongoDB"))
-  );
+    );
+    yield* _(Effect.logInfo("Connected to MongoDB"));
+    return client;
+  });
 
 export const mongoDbClose = (force?: boolean) => (client: MongoClient) =>
-  Effect.logInfo("Closing MongoDB connection").pipe(
-    Effect.flatMap(() => Effect.promise(() => client.close(force))),
-    Effect.tap(() => Effect.logInfo("MongoDB connection closed"))
-  );
+  Effect.gen(function* (_) {
+    yield* _(Effect.logInfo("Closing MongoDB connection"));
+    yield* _(Effect.promise(() => client.close(force)));
+    yield* _(Effect.logInfo("MongoDB connection closed"));
+  });
 
 export const mongoDbImpl = (mongodbUrl: string, options?: MongoClientOptions) =>
-  pipe(
-    Effect.acquireRelease(mongoDbConnect(mongodbUrl, options), mongoDbClose()),
-    Effect.flatMap((client) => Effect.try(() => client.db()))
-  );
+  Effect.acquireRelease(
+    mongoDbConnect(mongodbUrl, options),
+    mongoDbClose()
+  ).pipe(Effect.flatMap((client) => Effect.try(() => client.db())));
 
 export const MongoDbLayer = Layer.scoped(
   DatabaseTag,

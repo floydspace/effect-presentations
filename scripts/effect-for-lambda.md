@@ -13,10 +13,10 @@ Or Functional Programming for Functions
 
 Overview
 
-```ts [167-189|165,170-171|173-175|177|178|180-183|185|186|126-129|131-138|140-150|152-162|79-81|115-124|83-113|6-24|26-29|31-50|34-36|38-46|40|60-70|72-76]
+```ts [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53]
 import { SNS } from "@aws-sdk/client-sns";
 import type { Handler, SNSEvent } from "aws-lambda";
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { Db, MongoClient } from "mongodb";
 import { z } from "zod";
 
 const Quote = z.object({
@@ -29,19 +29,8 @@ const Quote = z.object({
 });
 type Quote = z.infer<typeof Quote>;
 
-const InstrumentDocument = z.object({
-  id: z.string(),
-  symbol: z.string(),
-  name: z.string(),
-  isin: z.string(),
-  quote: QuoteDocument,
-  deleted_at: z.string().nullable().optional(),
-});
-type InstrumentDocument = z.infer<typeof InstrumentDocument>;
-
 interface InstrumentStore {
-  getById: (id: string) => Promise<InstrumentDocument>;
-  updateQuote: (id: string, quote: Quote) => Promise<void>;
+  updateQuote: (symbol: string, quote: Quote) => Promise<void>;
 }
 
 class MongoDbInstrumentStore implements InstrumentStore {
@@ -73,22 +62,10 @@ class MongoDbInstrumentStore implements InstrumentStore {
     this.db = client.db();
   }
 
-  async getById(id: string) {
-    const item = await this.db
-      .collection("instruments")
-      .findOne({ _id: new ObjectId(id), deleted_at: null });
-
-    if (!item) {
-      throw new Error("Instrument not found");
-    }
-
-    return InstrumentDocument.parse(item);
-  }
-
-  async updateQuote(id: string, quote: Quote) {
+  async updateQuote(symbol: string, quote: Quote) {
     await this.db
       .collection("instruments")
-      .findOneAndUpdate({ _id: new ObjectId(id) }, { $set: { quote } });
+      .findOneAndUpdate({ symbol }, { $set: { quote } });
   }
 }
 
@@ -140,7 +117,6 @@ class YahooQuoteClient implements QuoteClient {
 }
 
 interface EventBus {
-  send: <T>(from: string, to: string, payload: T) => Promise<void>;
   publish: <T>(from: string, payload: T) => Promise<void>;
 }
 
@@ -151,18 +127,6 @@ class SNSEventBus implements EventBus {
   constructor() {
     this.sns = new SNS({});
     this.topicArn = process.env.DOMAIN_TOPIC_ARN!;
-  }
-
-  async send<T>(from: string, to: string, payload: T) {
-    await this.sns.publish({
-      TopicArn: this.topicArn,
-      Message: JSON.stringify(payload),
-      MessageAttributes: {
-        source: { DataType: "String", StringValue: from },
-        destination: { DataType: "String", StringValue: to },
-        exchange_type: { DataType: "String", StringValue: "direct" },
-      },
-    });
   }
 
   async publish<T>(from: string, payload: T) {
@@ -178,28 +142,25 @@ class SNSEventBus implements EventBus {
   }
 }
 
-const messageSchema = z.object({ instrumentId: z.string() });
-
 const handler: Handler<SNSEvent, void> = async (event) => {
   console.info(`Received event: `, event);
 
   const message = JSON.parse(event.Records[0].Sns.Message);
-  const { instrumentId } = messageSchema.parse(message);
+  const { symbol } = z.object({ symbol: z.string() }).parse(message);
 
   const bus = new SNSEventBus();
   const client = new YahooQuoteClient();
   const store = await MongoDbInstrumentStore.init();
 
-  const instrument = await store.getById(instrumentId);
-  const quote = await client.lastPrice(instrument.symbol);
+  const quote = await client.lastPrice(symbol);
 
   if (!quote) {
     console.error("No quote found");
     return;
   }
 
-  await store.updateQuote(instrumentId, quote);
-  await bus.publish("quote_updated", { instrumentId, quote });
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
 
   console.info(`Successfully processed event`);
 };
@@ -284,17 +245,16 @@ export const httpErrorHandlerMiddleware = (): MiddlewareObj<any, any> => {
 
 --
 
-```ts [122-123,125-127,129,130,137,138|16-18,22|39,43-45,51|9-10|62|79-80]
+```ts [94-95,97-99,101,108-109|15-17,21|38,42-44|9|49|66]
 import { SNS } from "@aws-sdk/client-sns";
 import type { Handler, SNSEvent } from "aws-lambda";
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { Db, MongoClient } from "mongodb";
 import { z } from "zod";
 
 // ...
 
 interface InstrumentStore {
-  getById: (id: string) => Promise<InstrumentDocument>;
-  updateQuote: (id: string, quote: Quote) => Promise<void>;
+  updateQuote: (symbol: string, quote: Quote) => Promise<void>;
 }
 
 class MongoDbInstrumentStore implements InstrumentStore {
@@ -326,22 +286,10 @@ class MongoDbInstrumentStore implements InstrumentStore {
     this.db = client.db();
   }
 
-  async getById(id: string) {
-    const item = await this.db
-      .collection("instruments")
-      .findOne({ _id: new ObjectId(id), deleted_at: null });
-
-    if (!item) {
-      throw new Error("Instrument not found");
-    }
-
-    return InstrumentDocument.parse(item);
-  }
-
-  async updateQuote(id: string, quote: Quote) {
+  async updateQuote(symbol: string, quote: Quote) {
     await this.db
       .collection("instruments")
-      .findOneAndUpdate({ _id: new ObjectId(id) }, { $set: { quote } });
+      .findOneAndUpdate({ symbol }, { $set: { quote } });
   }
 }
 
@@ -363,7 +311,6 @@ class YahooQuoteClient implements QuoteClient {
 }
 
 interface EventBus {
-  send: <T>(from: string, to: string, payload: T) => Promise<void>;
   publish: <T>(from: string, payload: T) => Promise<void>;
 }
 
@@ -374,18 +321,6 @@ class SNSEventBus implements EventBus {
   constructor() {
     this.sns = new SNS({});
     this.topicArn = process.env.DOMAIN_TOPIC_ARN!;
-  }
-
-  async send<T>(from: string, to: string, payload: T) {
-    await this.sns.publish({
-      TopicArn: this.topicArn,
-      Message: JSON.stringify(payload),
-      MessageAttributes: {
-        source: { DataType: "String", StringValue: from },
-        destination: { DataType: "String", StringValue: to },
-        exchange_type: { DataType: "String", StringValue: "direct" },
-      },
-    });
   }
 
   async publish<T>(from: string, payload: T) {
@@ -401,28 +336,25 @@ class SNSEventBus implements EventBus {
   }
 }
 
-// ...
-
 const handler: Handler<SNSEvent, void> = async (event) => {
   console.info(`Received event: `, event);
 
   const message = JSON.parse(event.Records[0].Sns.Message);
-  const { instrumentId } = messageSchema.parse(message);
+  const { symbol } = z.object({ symbol: z.string() }).parse(message);
 
   const bus = new SNSEventBus();
   const client = new YahooQuoteClient();
   const store = await MongoDbInstrumentStore.init();
 
-  const instrument = await store.getById(instrumentId);
-  const quote = await client.lastPrice(instrument.symbol);
+  const quote = await client.lastPrice(symbol);
 
   if (!quote) {
     console.error("No quote found");
     return;
   }
 
-  await store.updateQuote(instrumentId, quote);
-  await bus.publish("quote_updated", { instrumentId, quote });
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
 
   console.info(`Successfully processed event`);
 };
@@ -434,17 +366,16 @@ module.exports.handler = handler;
 
 What other problems are here?
 
-```ts [119-141|125-127|88-89|17,27-28]
+```ts [91-112|97-99|74-75|16,26-27]
 import { SNS } from "@aws-sdk/client-sns";
 import type { Handler, SNSEvent } from "aws-lambda";
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { Db, MongoClient } from "mongodb";
 import { z } from "zod";
 
 // ...
 
 interface InstrumentStore {
-  getById: (id: string) => Promise<InstrumentDocument>;
-  updateQuote: (id: string, quote: Quote) => Promise<void>;
+  updateQuote: (symbol: string, quote: Quote) => Promise<void>;
 }
 
 class MongoDbInstrumentStore implements InstrumentStore {
@@ -476,22 +407,10 @@ class MongoDbInstrumentStore implements InstrumentStore {
     this.db = client.db();
   }
 
-  async getById(id: string) {
-    const item = await this.db
-      .collection("instruments")
-      .findOne({ _id: new ObjectId(id), deleted_at: null });
-
-    if (!item) {
-      throw new Error("Instrument not found");
-    }
-
-    return InstrumentDocument.parse(item);
-  }
-
-  async updateQuote(id: string, quote: Quote) {
+  async updateQuote(symbol: string, quote: Quote) {
     await this.db
       .collection("instruments")
-      .findOneAndUpdate({ _id: new ObjectId(id) }, { $set: { quote } });
+      .findOneAndUpdate({ symbol }, { $set: { quote } });
   }
 }
 
@@ -513,7 +432,6 @@ class YahooQuoteClient implements QuoteClient {
 }
 
 interface EventBus {
-  send: <T>(from: string, to: string, payload: T) => Promise<void>;
   publish: <T>(from: string, payload: T) => Promise<void>;
 }
 
@@ -524,18 +442,6 @@ class SNSEventBus implements EventBus {
   constructor() {
     this.sns = new SNS({});
     this.topicArn = process.env.DOMAIN_TOPIC_ARN!;
-  }
-
-  async send<T>(from: string, to: string, payload: T) {
-    await this.sns.publish({
-      TopicArn: this.topicArn,
-      Message: JSON.stringify(payload),
-      MessageAttributes: {
-        source: { DataType: "String", StringValue: from },
-        destination: { DataType: "String", StringValue: to },
-        exchange_type: { DataType: "String", StringValue: "direct" },
-      },
-    });
   }
 
   async publish<T>(from: string, payload: T) {
@@ -551,28 +457,25 @@ class SNSEventBus implements EventBus {
   }
 }
 
-// ...
-
 const handler: Handler<SNSEvent, void> = async (event) => {
   console.info(`Received event: `, event);
 
   const message = JSON.parse(event.Records[0].Sns.Message);
-  const { instrumentId } = messageSchema.parse(message);
+  const { symbol } = z.object({ symbol: z.string() }).parse(message);
 
   const bus = new SNSEventBus();
   const client = new YahooQuoteClient();
   const store = await MongoDbInstrumentStore.init();
 
-  const instrument = await store.getById(instrumentId);
-  const quote = await client.lastPrice(instrument.symbol);
+  const quote = await client.lastPrice(symbol);
 
   if (!quote) {
     console.error("No quote found");
     return;
   }
 
-  await store.updateQuote(instrumentId, quote);
-  await bus.publish("quote_updated", { instrumentId, quote });
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
 
   console.info(`Successfully processed event`);
 };
@@ -611,6 +514,7 @@ module.exports.handler = handler;
 - They enforce writing OOP code <!-- .element: class="fragment" data-fragment-index="1" -->
 - They are not portable and also a dependency <!-- .element: class="fragment" data-fragment-index="1" -->
 - They based on "reflect-metadata" and/or decorators <!-- .element: class="fragment" data-fragment-index="1" -->
+- They are not tree shakeable <!-- .element: class="fragment" data-fragment-index="1" -->
   </grid>
 
 ---
@@ -1083,7 +987,7 @@ export const handler = async (event) => {
 Providing layer
 
 <!-- prettier-ignore -->
-```ts [19,29||10,14]
+```ts [19,29|10-19|10,14]
 import { Effect, Context } from "effect";
 
 interface QuoteClient {
@@ -1202,7 +1106,7 @@ export const handler = async () => {
 
 Final Effect app
 
-```ts [345-368|301-304|346|347|343,352-355|357-359|361-362,364-365|368|371-375,377|332-341]
+```ts [279-301|237-240|280|281|286-289|291-293|295,297-298|301|303-307,309|268-277|242-266|243|244-247|248,255,262-263|33-42,44|73-89|76|68-71|62-66|64|48-54|56-60|96-100,102]
 import {
   PublishCommandInput,
   PublishCommandOutput,
@@ -1223,26 +1127,7 @@ import {
   Scope,
   pipe,
 } from "effect";
-import { Db, MongoClient, MongoClientOptions, ObjectId } from "mongodb";
-
-const ObjectIdFromString = Schema.transformOrFail(
-  Schema.union(Schema.string, Schema.number),
-  Schema.instanceOf(ObjectId),
-  (s, _, ast) => {
-    try {
-      return ParseResult.succeed(new ObjectId(s));
-    } catch (e: any) {
-      return ParseResult.fail(ParseResult.type(ast, s, e.message));
-    }
-  },
-  (u, _, ast) => {
-    try {
-      return ParseResult.succeed(u.toHexString());
-    } catch (e: any) {
-      return ParseResult.fail(ParseResult.type(ast, u, e.message));
-    }
-  }
-);
+import { Db, MongoClient, MongoClientOptions } from "mongodb";
 
 const Quote = Schema.struct({
   timestamp: Schema.number,
@@ -1254,28 +1139,9 @@ const Quote = Schema.struct({
 });
 type Quote = Schema.Schema.To<typeof Quote>;
 
-const InstrumentDocument = Schema.struct({
-  id: Schema.string,
-  symbol: Schema.string,
-  name: Schema.string,
-  isin: Schema.string,
-  quote: Quote,
-  deleted_at: Schema.optional(Schema.nullable(Schema.string)),
-});
-type InstrumentDocument = Schema.Schema.To<typeof InstrumentDocument>;
-
 interface InstrumentStore {
-  getById: (
-    id: string
-  ) => Effect.Effect<
-    never,
-    | Cause.UnknownException
-    | Cause.NoSuchElementException
-    | ParseResult.ParseError,
-    InstrumentDocument
-  >;
   updateQuote: (
-    id: string,
+    symbol: string,
     quote: Quote
   ) => Effect.Effect<
     never,
@@ -1318,33 +1184,14 @@ const InstrumentStoreLayer = Layer.effect(
   Effect.gen(function* (_) {
     const db = yield* _(DatabaseTag);
 
-    const getById: InstrumentStore["getById"] = (id) =>
-      Schema.decode(ObjectIdFromString)(id).pipe(
-        Effect.flatMap((_id) =>
-          Effect.tryPromise(() =>
-            db
-              .collection<InstrumentDocument>("instruments")
-              .findOne({ _id, deleted_at: null })
-          )
-        ),
-        Effect.flatMap(Effect.fromNullable),
-        Effect.flatMap(Schema.decode(InstrumentDocument))
-      );
-
-    const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
-      Schema.decode(ObjectIdFromString)(id).pipe(
-        Effect.flatMap((_id) =>
-          Effect.tryPromise(() =>
-            db
-              .collection("instruments")
-              .findOneAndUpdate({ _id }, { $set: { quote } })
-          )
-        ),
-        Effect.asUnit
-      );
+    const updateQuote: InstrumentStore["updateQuote"] = (symbol, quote) =>
+      Effect.tryPromise(() =>
+        db
+          .collection("instruments")
+          .findOneAndUpdate({ symbol }, { $set: { quote } })
+      ).pipe(Effect.asUnit);
 
     return InstrumentStore.of({
-      getById,
       updateQuote,
     });
   })
@@ -1436,12 +1283,6 @@ const YahooQuoteClientImpl = Layer.succeed(
 );
 
 interface EventBus {
-  send: <T>(
-    from: string,
-    to: string,
-    payload: T
-  ) => Effect.Effect<never, Cause.UnknownException, void>;
-
   publish: <T>(
     from: string,
     payload: T
@@ -1494,7 +1335,6 @@ const EventBusLayer = Layer.effect(
         .pipe(Effect.asUnit);
 
     return EventBus.of({
-      send: (from, to, payload) => sendMessage("direct", from, to, payload),
       publish: (from, payload) =>
         sendMessage("fanout", from, "subscriber", payload),
     });
@@ -1545,8 +1385,6 @@ function makeLambda<T, R, E1, E2, A>(
   };
 }
 
-const Message = Schema.struct({ instrumentId: Schema.string });
-
 const effectHandler: EffectHandler<
   SNSEvent,
   EventBus | QuoteClient | InstrumentStore
@@ -1554,25 +1392,23 @@ const effectHandler: EffectHandler<
   Effect.gen(function* (_) {
     yield* _(Console.log(`Received event: `, event));
 
-    const decodeMessage = Schema.decode(Schema.parseJson(Message));
-    const { instrumentId } = yield* _(
-      decodeMessage(event.Records[0].Sns.Message)
+    const decodeMessage = Schema.decode(
+      Schema.parseJson(Schema.struct({ symbol: Schema.string }))
     );
+    const { symbol } = yield* _(decodeMessage(event.Records[0].Sns.Message));
 
     const bus = yield* _(EventBus);
     const client = yield* _(QuoteClient);
     const store = yield* _(InstrumentStore);
 
-    const instrument = yield* _(store.getById(instrumentId));
-    const quote = yield* _(client.lastPrice(instrument.symbol));
+    const quote = yield* _(client.lastPrice(symbol));
 
-    yield* _(store.updateQuote(instrumentId, quote));
-    yield* _(bus.publish("quote_updated", { instrumentId, quote }));
+    yield* _(store.updateQuote(symbol, quote));
+    yield* _(bus.publish("quote_updated", { symbol, quote }));
 
     yield* _(Console.log(`Successfully processed event`));
   }).pipe(Effect.orDie);
 
-// Layer.Layer<never, Cause.UnknownException | ConfigError, InstrumentStore | QuoteClient | EventBus>
 const LambdaLive = Layer.mergeAll(
   SNSEventBusImpl,
   YahooQuoteClientImpl,
@@ -1607,7 +1443,7 @@ Cons:
 - Community is still too young <!-- .element: class="fragment"  -->
 - Type safety comes with a cost of verbosity <!-- .element: class="fragment"  -->
 - Opinionated <!-- .element: class="fragment"  -->
-- Brings extra ~200kb to the bundle size (minified & uncompressed) <!-- .element: class="fragment"  -->
+- Brings extra ~190kb to the bundle size (minified & uncompressed) <!-- .element: class="fragment"  -->
   </grid>
 
 ---
@@ -1618,7 +1454,8 @@ Cons:
 
 Links
 
-- [Effect](https://www.effect.website/)
-- [Effect Docs](https://effect-ts.github.io/effect/)
-- [Effect Github](https://github.com/Effect-TS/effect)
-- [Effectful AWS Github](https://github.com/floydspace/effect-aws)
+- https://www.effect.website - Effect Website
+- https://effect-ts.github.io/effect - Effect Docs
+- https://floydspace.github.io/effect-aws - Effectful AWS Docs
+- https://github.com/Effect-TS/effect - Effect Github
+- https://github.com/floydspace/effect-aws - Effectful AWS Github
