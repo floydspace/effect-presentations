@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "sideEffects": false,
+  "sideEffects": [],
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.499.0",
     "@aws-sdk/client-sns": "^3.499.0",

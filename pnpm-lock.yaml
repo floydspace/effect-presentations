@@ -53,21 +53,21 @@ importers:
       '@aws-sdk/util-dynamodb':
         specifier: ^3.499.0
         version: 3.499.0(@aws-sdk/client-dynamodb@3.499.0)
-      '@effect-aws/client-dynamodb':
-        specifier: ^1.0.0
-        version: 1.0.0(effect@2.2.2)
       '@effect-aws/client-sns':
-        specifier: ^1.0.0
-        version: 1.0.0(effect@2.2.2)
+        specifier: ^1.1.0
+        version: 1.1.0(effect@2.3.1)
       '@effect-aws/lambda':
-        specifier: ^1.0.0
-        version: 1.0.0(effect@2.2.2)
+        specifier: ^1.1.0
+        version: 1.1.0(effect@2.3.1)
+      '@effect-aws/lib-dynamodb':
+        specifier: ^1.1.0
+        version: 1.1.0(@effect-aws/client-dynamodb@1.1.0)(effect@2.3.1)
       '@effect/schema':
-        specifier: ^0.59.1
-        version: 0.59.1(effect@2.2.2)(fast-check@3.15.0)
+        specifier: ^0.62.1
+        version: 0.62.1(effect@2.3.1)(fast-check@3.15.0)
       effect:
-        specifier: ^2.2.2
-        version: 2.2.2
+        specifier: ^2.3.1
+        version: 2.3.1
       mongodb:
         specifier: ^6.3.0
         version: 6.3.0
@@ -500,6 +500,19 @@ packages:
       tslib: 2.6.2
     dev: false
 
+  /@aws-sdk/lib-dynamodb@3.511.0(@aws-sdk/client-dynamodb@3.499.0):
+    resolution: {integrity: sha512-5xURF5gR8dY+pg50Y7GYfNZdPLcIGato02HouUauqs36ScfftfCXEOSbJNNYlyImrMspRlJtefdiWPhekHILhw==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      '@aws-sdk/client-dynamodb': ^3.0.0
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.499.0
+      '@aws-sdk/util-dynamodb': 3.511.0(@aws-sdk/client-dynamodb@3.499.0)
+      '@smithy/smithy-client': 2.3.1
+      '@smithy/types': 2.9.1
+      tslib: 2.6.2
+    dev: false
+
   /@aws-sdk/middleware-endpoint-discovery@3.496.0:
     resolution: {integrity: sha512-VVJFTYeyhtjY8c0sAQUmzN4OUzaPINvXsYcL1dljFd7vdgSyf7+qwxzngOH5pKvyaCZ2vq9ngd8dAynSlA+TIg==}
     engines: {node: '>=14.0.0'}
@@ -640,6 +653,16 @@ packages:
       tslib: 2.6.2
     dev: false
 
+  /@aws-sdk/util-dynamodb@3.511.0(@aws-sdk/client-dynamodb@3.499.0):
+    resolution: {integrity: sha512-VADCpPre14/KfXzZ45UHegeUbuefYR7AdfRrcTTjbOFBf1jTF9QUYlc+I2tYnDJ0kCBSSTjuO8XwjMAMqrtjQQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      '@aws-sdk/client-dynamodb': ^3.0.0
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.499.0
+      tslib: 2.6.2
+    dev: false
+
   /@aws-sdk/util-endpoints@3.496.0:
     resolution: {integrity: sha512-1QzOiWHi383ZwqSi/R2KgKCd7M+6DxkxI5acqLPm8mvDRDP2jRjrnVaC0g9/tlttWousGEemDUWStwrD2mVYSw==}
     engines: {node: '>=14.0.0'}
@@ -687,45 +710,60 @@ packages:
       tslib: 2.6.2
     dev: false
 
-  /@effect-aws/client-dynamodb@1.0.0(effect@2.2.2):
-    resolution: {integrity: sha512-dsReFU3OBqcjKREMGtK+xG1ERsGK4b0Gg0e4U1drWlziK5676mFeCY+YfillgGMN14LqsADeUGVRZQc1kJzIDA==}
+  /@effect-aws/client-dynamodb@1.1.0(effect@2.3.1):
+    resolution: {integrity: sha512-issEpwx9Mf/NEGdODjjPijhT5/BaMs5/V2GnlTdz1r9qh/21tGzbVYw9/7W19lGN8NTjjugt0VddP1wvz1Xo+Q==}
     peerDependencies:
-      effect: ^2.0.1
+      effect: '>=2.3.1 <2.4.0'
     dependencies:
       '@aws-sdk/client-dynamodb': 3.499.0
       '@aws-sdk/types': 3.496.0
-      effect: 2.2.2
+      effect: 2.3.1
     transitivePeerDependencies:
       - aws-crt
     dev: false
 
-  /@effect-aws/client-sns@1.0.0(effect@2.2.2):
-    resolution: {integrity: sha512-2/0KzKXfwUl5jSvDVGxb+bJctoPb8RJR0PQ7909/Rg+tGYgxuXKnWEoMFcCGyqaU9V/zgNgR7Lw5XB1v3AyKKw==}
+  /@effect-aws/client-sns@1.1.0(effect@2.3.1):
+    resolution: {integrity: sha512-vkXF/HCHrjaGgM+broBayS/AvCYFsrneudfc+ddtDrQgwtfVdrpoU668hicPve50jZOiU/Xa0ZLRdydZvI0/UQ==}
     peerDependencies:
-      effect: ^2.0.1
+      effect: '>=2.3.1 <2.4.0'
     dependencies:
       '@aws-sdk/client-sns': 3.499.0
       '@aws-sdk/types': 3.496.0
-      effect: 2.2.2
+      effect: 2.3.1
     transitivePeerDependencies:
       - aws-crt
     dev: false
 
-  /@effect-aws/lambda@1.0.0(effect@2.2.2):
-    resolution: {integrity: sha512-9S08ceUpNOuXsQEVxqmjD48jPgVduQly7+rZymM23jZPJ+ahRjVm8odGNoW0ScmTvz4MEC3wGDMxw59yxbtOkw==}
+  /@effect-aws/lambda@1.1.0(effect@2.3.1):
+    resolution: {integrity: sha512-4TjitWQbpxVXgK3ogK9ewZkRPy8nnOPFZast+1Z1UKyaOyt+J7/3nkHJPrpjQvwcKnktD16vFMsDctGC+KxiZw==}
     peerDependencies:
-      effect: ^2.0.1
+      effect: '>=2.3.1 <2.4.0'
     dependencies:
-      effect: 2.2.2
+      effect: 2.3.1
     dev: false
 
-  /@effect/schema@0.59.1(effect@2.2.2)(fast-check@3.15.0):
-    resolution: {integrity: sha512-dighL1fSjOLNupETYaN4hvUo9zxvdi4w+lgJ9lHKYFZapaFxR2f8ZKB2WunsSGnF5mCyWLDS3GMtfLeqz2I2ug==}
+  /@effect-aws/lib-dynamodb@1.1.0(@effect-aws/client-dynamodb@1.1.0)(effect@2.3.1):
+    resolution: {integrity: sha512-tbKkkJzZKtah6UWPIp1M+Y/D4hC+EyK2GhAv3rV9gXhWLSiqkO0a4KTBZzNjytum/fNmSQnFjesz0u4v+XnCUQ==}
     peerDependencies:
-      effect: ^2.0.3
+      '@effect-aws/client-dynamodb': ^1.0.0
+      effect: '>=2.3.1 <2.4.0'
+    dependencies:
+      '@aws-sdk/client-dynamodb': 3.499.0
+      '@aws-sdk/lib-dynamodb': 3.511.0(@aws-sdk/client-dynamodb@3.499.0)
+      '@aws-sdk/types': 3.496.0
+      '@effect-aws/client-dynamodb': 1.1.0(effect@2.3.1)
+      effect: 2.3.1
+    transitivePeerDependencies:
+      - aws-crt
+    dev: false
+
+  /@effect/schema@0.62.1(effect@2.3.1)(fast-check@3.15.0):
+    resolution: {integrity: sha512-Zi8PtOElNyq0INLqGlDrMqB/uzs/TACP2ZhcLABm/QjFVvRTO996UaVdsOyA+OTqroQkoYEe+q/cnXxlMAGLBw==}
+    peerDependencies:
+      effect: ^2.3.1
       fast-check: ^3.13.2
     dependencies:
-      effect: 2.2.2
+      effect: 2.3.1
       fast-check: 3.15.0
     dev: false
 
@@ -1918,8 +1956,8 @@ packages:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
     dev: true
 
-  /effect@2.2.2:
-    resolution: {integrity: sha512-hY/37Ssd2Zfn0r09vDe9tSYPVS5HZBbmW4DMBO7OIIvRADgp5cnWfLhY6pVy+Bm5DXV9luFycjDcB1731WGyTA==}
+  /effect@2.3.1:
+    resolution: {integrity: sha512-bOmhWIt3WjccP2DXan8eJmIqjVXwan0hj+Y6BHJOauHt8HNEuQndp6D7bAUsUsjPoKGCU70J9sMeT5QEVYlgbQ==}
     dev: false
 
   /electron-to-chromium@1.4.646:

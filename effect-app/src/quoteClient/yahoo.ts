@@ -58,7 +58,7 @@ const lastPrice = (symbol: string) =>
   Effect.gen(function* (_) {
     const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
     const json = yield* _(effectfulFetch(url));
-    return yield* _(Schema.parseOption(YahooResponse)(json));
+    return yield* _(Schema.decodeUnknownOption(YahooResponse)(json));
   });
 
 export const YahooQuoteClientImpl = Layer.succeed(

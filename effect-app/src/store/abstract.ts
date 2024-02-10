@@ -25,20 +25,17 @@ export interface InstrumentStore {
   getById: (
     id: string
   ) => Effect.Effect<
-    never,
+    InstrumentDocument,
     | Cause.UnknownException
     | Cause.NoSuchElementException
-    | ParseResult.ParseError,
-    InstrumentDocument
+    | ParseResult.ParseError
   >;
   updateQuote: (
     id: string,
     quote: Quote
-  ) => Effect.Effect<
-    never,
-    Cause.UnknownException | ParseResult.ParseError,
-    void
-  >;
+  ) => Effect.Effect<void, Cause.UnknownException | ParseResult.ParseError>;
 }
 
-export const InstrumentStore = Context.Tag<InstrumentStore>();
+export const InstrumentStore = Context.GenericTag<InstrumentStore>(
+  "@effect-app/InstrumentStore"
+);

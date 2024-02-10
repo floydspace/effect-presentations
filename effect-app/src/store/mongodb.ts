@@ -4,7 +4,7 @@ import { Db, MongoClient, MongoClientOptions } from "mongodb";
 import { ObjectIdFromString } from "../schema";
 import { InstrumentDocument, InstrumentStore } from "./abstract";
 
-export const DatabaseTag = Context.Tag<Db>();
+export const DatabaseTag = Context.GenericTag<Db>("@effect-app/Database");
 
 export const mongoDbConnect = (
   mongodbUrl: string,

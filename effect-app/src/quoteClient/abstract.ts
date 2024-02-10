@@ -5,7 +5,9 @@ import { FetchError } from "./helper";
 export interface QuoteClient {
   lastPrice: (
     symbol: string
-  ) => Effect.Effect<never, FetchError | Cause.NoSuchElementException, Quote>;
+  ) => Effect.Effect<Quote, FetchError | Cause.NoSuchElementException>;
 }
 
-export const QuoteClient = Context.Tag<QuoteClient>();
+export const QuoteClient = Context.GenericTag<QuoteClient>(
+  "@effect-app/QuoteClient"
+);

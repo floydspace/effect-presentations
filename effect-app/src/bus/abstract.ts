@@ -4,13 +4,13 @@ export interface EventBus {
   send: <T>(
     from: string,
     to: string,
-    payload: T,
-  ) => Effect.Effect<never, Cause.UnknownException, void>;
+    payload: T
+  ) => Effect.Effect<void, Cause.UnknownException>;
 
   publish: <T>(
     from: string,
-    payload: T,
-  ) => Effect.Effect<never, Cause.UnknownException, void>;
+    payload: T
+  ) => Effect.Effect<void, Cause.UnknownException>;
 }
 
-export const EventBus = Context.Tag<EventBus>();
+export const EventBus = Context.GenericTag<EventBus>("@effect-app/EventBus");
