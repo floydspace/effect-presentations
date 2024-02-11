@@ -11,25 +11,7 @@ export const Quote = Schema.struct({
 });
 export type Quote = Schema.Schema.To<typeof Quote>;
 
-export const InstrumentDocument = Schema.struct({
-  id: Schema.string,
-  symbol: Schema.string,
-  name: Schema.string,
-  isin: Schema.string,
-  quote: Quote,
-  deleted_at: Schema.optional(Schema.nullable(Schema.string)),
-});
-export type InstrumentDocument = Schema.Schema.To<typeof InstrumentDocument>;
-
 export interface InstrumentStore {
-  getById: (
-    id: string
-  ) => Effect.Effect<
-    InstrumentDocument,
-    | Cause.UnknownException
-    | Cause.NoSuchElementException
-    | ParseResult.ParseError
-  >;
   updateQuote: (
     id: string,
     quote: Quote

@@ -2,7 +2,7 @@ import { Schema } from "@effect/schema";
 import { Config, Context, Effect, Layer } from "effect";
 import { Db, MongoClient, MongoClientOptions } from "mongodb";
 import { ObjectIdFromString } from "../schema";
-import { InstrumentDocument, InstrumentStore } from "./abstract";
+import { InstrumentStore } from "./abstract";
 
 export const DatabaseTag = Context.GenericTag<Db>("@effect-app/Database");
 
@@ -42,19 +42,6 @@ const InstrumentStoreLayer = Layer.effect(
   Effect.gen(function* (_) {
     const db = yield* _(DatabaseTag);
 
-    const getById: InstrumentStore["getById"] = (id) =>
-      Schema.decode(ObjectIdFromString)(id).pipe(
-        Effect.andThen((_id) =>
-          Effect.tryPromise(() =>
-            db
-              .collection<InstrumentDocument>("instruments")
-              .findOne({ _id, deleted_at: null })
-          )
-        ),
-        Effect.andThen(Effect.fromNullable),
-        Effect.andThen(Schema.decode(InstrumentDocument))
-      );
-
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
       Schema.decode(ObjectIdFromString)(id).pipe(
         Effect.andThen((_id) =>
@@ -68,7 +55,6 @@ const InstrumentStoreLayer = Layer.effect(
       );
 
     return InstrumentStore.of({
-      getById,
       updateQuote,
     });
   })

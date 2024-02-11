@@ -2,22 +2,14 @@ import {
   DefaultDynamoDBDocumentServiceLayer,
   DynamoDBDocumentService,
 } from "@effect-aws/lib-dynamodb";
-import { Schema } from "@effect/schema";
 import { Cause, Config, Effect, Layer } from "effect";
-import { InstrumentDocument, InstrumentStore } from "./abstract";
+import { InstrumentStore } from "./abstract";
 
 const InstrumentStoreLayer = Layer.effect(
   InstrumentStore,
   Effect.gen(function* (_) {
     const TableName = yield* _(Config.string("INSTRUMENTS_TABLE_NAME"));
     const db = yield* _(DynamoDBDocumentService);
-
-    const getById: InstrumentStore["getById"] = (id) =>
-      db.get({ TableName, Key: { id } }).pipe(
-        Effect.andThen((response) => Effect.fromNullable(response.Item)),
-        Effect.andThen(Schema.decodeUnknown(InstrumentDocument)),
-        Effect.catchAll((e) => new Cause.UnknownException(e))
-      );
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
       db
@@ -34,7 +26,6 @@ const InstrumentStoreLayer = Layer.effect(
         );
 
     return InstrumentStore.of({
-      getById,
       updateQuote,
     });
   })

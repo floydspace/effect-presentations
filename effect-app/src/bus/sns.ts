@@ -30,7 +30,6 @@ const EventBusLayer = Layer.effect(
         );
 
     return EventBus.of({
-      send: (from, to, payload) => sendMessage("direct", from, to, payload),
       publish: (from, payload) =>
         sendMessage("fanout", from, "subscriber", payload),
     });
