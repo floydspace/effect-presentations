@@ -1,5 +1,5 @@
 import { Db, MongoClient, ObjectId } from "mongodb";
-import { InstrumentDocument, InstrumentStore, Quote } from "./abstract";
+import { InstrumentStore, Quote } from "./abstract";
 
 export class MongoDbInstrumentStore implements InstrumentStore {
   public static async init() {
@@ -28,18 +28,6 @@ export class MongoDbInstrumentStore implements InstrumentStore {
 
   private constructor(client: MongoClient) {
     this.db = client.db();
-  }
-
-  async getById(id: string) {
-    const item = await this.db
-      .collection("instruments")
-      .findOne({ _id: new ObjectId(id), deleted_at: null });
-
-    if (!item) {
-      throw new Error("Instrument not found");
-    }
-
-    return InstrumentDocument.parse(item);
   }
 
   async updateQuote(id: string, quote: Quote) {

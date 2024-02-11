@@ -1,6 +1,6 @@
 import { DynamoDB } from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { InstrumentDocument, InstrumentStore, Quote } from "./abstract";
+import { marshall } from "@aws-sdk/util-dynamodb";
+import { InstrumentStore, Quote } from "./abstract";
 
 export class DynamoDbInstrumentStore implements InstrumentStore {
   private readonly ddb: DynamoDB;
@@ -9,19 +9,6 @@ export class DynamoDbInstrumentStore implements InstrumentStore {
   constructor() {
     this.ddb = new DynamoDB({});
     this.tableName = process.env.INSTRUMENTS_TABLE_NAME!;
-  }
-
-  async getById(id: string) {
-    const res = await this.ddb.getItem({
-      TableName: this.tableName,
-      Key: marshall({ id }),
-    });
-
-    if (!res.Item) {
-      throw new Error("Instrument not found");
-    }
-
-    return InstrumentDocument.parse(unmarshall(res.Item));
   }
 
   async updateQuote(id: string, quote: Quote) {

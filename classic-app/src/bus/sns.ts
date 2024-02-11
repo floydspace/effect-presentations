@@ -27,10 +27,6 @@ export class SNSEventBus implements EventBus {
     });
   }
 
-  async send<T>(from: string, to: string, payload: T) {
-    await this.sendMessage("direct", from, to, payload);
-  }
-
   async publish<T>(from: string, payload: T) {
     await this.sendMessage("fanout", from, "subscriber", payload);
   }
