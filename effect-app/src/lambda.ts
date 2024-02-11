@@ -27,6 +27,11 @@ const effectHandler: EffectHandler<
     const instrument = yield* _(store.getById(instrumentId));
     const quote = yield* _(client.lastPrice(instrument.symbol));
 
+    if (!quote) {
+      yield* _(Effect.fail(new Error("No quote found")));
+      return;
+    }
+
     yield* _(store.updateQuote(instrumentId, quote));
     yield* _(bus.publish("quote_updated", { instrumentId, quote }));
 

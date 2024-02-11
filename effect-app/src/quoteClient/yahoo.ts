@@ -59,7 +59,11 @@ const lastPrice = (symbol: string) =>
     const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
     const json = yield* _(effectfulFetch(url));
     return yield* _(Schema.decodeUnknownOption(YahooResponse)(json));
-  });
+  }).pipe(
+    Effect.catchTags({
+      NoSuchElementException: () => Effect.succeed(null),
+    })
+  );
 
 export const YahooQuoteClientImpl = Layer.succeed(
   QuoteClient,

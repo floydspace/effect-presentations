@@ -533,7 +533,7 @@ Wait, what? Another one dependency? <!-- .element: class="fragment" data-fragmen
 
 <p><strong>YES, BUT</strong> Effect tools can replace a lot of libraries like:</p> <!-- .element: class="fragment"  -->
 
-- Configuration: convict <!-- .element: class="fragment"  -->
+- Configuration: node-config, convict <!-- .element: class="fragment"  -->
 - Schema Validation & Transformation: ajv / joi / zod / io-ts / morphism <!-- .element: class="fragment"  -->
 - Logging + Tracing: pino / winston / opentelemetry <!-- .element: class="fragment"  -->
 - Caching + Batching: dataloader <!-- .element: class="fragment"  -->
@@ -546,11 +546,15 @@ Wait, what? Another one dependency? <!-- .element: class="fragment" data-fragmen
 
 --
 
+**Effect** is a direct successor of **fp-ts** and is inspired by **ZIO** Scala library.
+
+--
+
 <p>The <strong><code>Effect</code></strong> type:</p>
 
 ```ts
 // Overly simplified
-type Effect<R, E, A> = (context: R) => E | A;
+type Effect<A, E, R> = (context: R) => E | A; // Effect<R, E, A> before v2.3
 ```
 
 - `R` - Dependencies
@@ -594,12 +598,13 @@ The **`unit`** `Effect`
 ```ts
 import { Effect } from "effect";
 
-const unit: Effect.Effect<never, never, void> = Effect.unit;
+// Effect<void, never, never>
+const unit: Effect.Effect<void> = Effect.unit;
 ```
 
-- `R` - `never` - no dependencies
-- `E` - `never` - never fails
 - `A` - `void` - returns nothing
+- `E` - `never` - never fails
+- `R` - `never` - no dependencies
 
 ```ts
 // can think of being like `noop`
@@ -613,12 +618,13 @@ The **`never`** `Effect`
 ```ts
 import { Effect } from "effect";
 
-const never: Effect.Effect<never, never, never> = Effect.never;
+// Effect<never, never, never>
+const never: Effect.Effect<never> = Effect.never;
 ```
 
-- `R` - `never` - no dependencies
-- `E` - `never` - never fails
 - `A` - `never` - never returns
+- `E` - `never` - never fails
+- `R` - `never` - no dependencies
 
 ```ts
 // can think of being like infinite loop
@@ -634,44 +640,45 @@ Simple `Effect`s
 ```ts
 import { Effect } from "effect";
 
-const success: Effect.Effect<never, never, number> = Effect.succeed(42);
+// Effect<number, never, never>
+const success: Effect.Effect<number> = Effect.succeed(42);
 ```
 
-- `R` - `never` - no dependencies
-- `E` - `never` - never fails
 - `A` - `number` - returns 42
+- `E` - `never` - never fails
+- `R` - `never` - no dependencies
 
 ```ts
 import { Effect } from "effect";
 
-const failure: Effect.Effect<never, Error, never> = Effect.fail(new Error());
+// Effect<never, Error, never>
+const failure: Effect.Effect<never, Error> = Effect.fail(new Error());
 ```
 
-- `R` - `never` - no dependencies
-- `E` - `Error` - fails with `Error`
 - `A` - `void` - never returns
+- `E` - `Error` - fails with `Error`
+- `R` - `never` - no dependencies
 
 --
 
 `Effect` adapters
 
-```ts [1-5|7-11|13-14|16-20]
-// Effect<never, never, number>
+```ts [1-4|6-10|12-13|15-19]
+// Effect<number, never, never>
 const program = Effect.sync(() => {
-  console.log("Hello, World!"); // side effect
   return 42; // return value
 });
 
-// Effect<never, Error, any>
+// Effect<any, Error, never>
 const program = Effect.try({
   try: () => JSON.parse(""),
   catch: (nativeError) => new Error("JSON.parse threw an error"),
 });
 
-// Effect<never, never, number>
+// Effect<number, never, never>
 const program = Effect.promise(() => Promise.resolve(42));
 
-// Effect<never, Error, Response>
+// Effect<Response, Error, never>
 const program = Effect.tryPromise({
   try: () => fetch("..."),
   catch: (nativeError) => new Error("fetch rejected"),
@@ -680,30 +687,66 @@ const program = Effect.tryPromise({
 
 --
 
-Combining `Effect`s
+Mapping & Combining `Effect`s
 
-```ts [1]
+```ts [1|3-4|6-9|11-15|17-18|20-22,24-25]
+const effect: Effect.Effect<number> = Effect.succeed(42);
+
+// Effect<string, never, never>
+const mappedEffect = Effect.map(effect, (n: number) => n.toString());
+
+// Effect<string, never, never>
+const flatEffect = Effect.flatMap(effect, (n: number) =>
+  Effect.succeed(n.toString())
+);
+
+// Effect<string, UnknownException, never>
+const thenEffect = Effect.andThen(effect, (n: number) =>
+  Promise.resolve(n.toString())
+);
+// like Promise.then
+
+// Effect<number, never, never>
+const tappedEffect = Effect.tap(effect, (n: number) => console.log(n));
+
+// Effect<[number, number], never, never>
+const combinedEffect = Effect.all([effect, effect]);
+// like Promise.all
+
+// Effect<{e1: number, e2: number}, never, never>
+const combinedEffect = Effect.all({ e1: effect, e2: effect });
+```
+
+--
+
+Piping `Effect`s
+
+```ts [1|3|5]
+const program = func2(func1(effect));
+// or
 const program = pipe(effect, func1, func2, ...)
 // or
 const program = effect.pipe(func1, func2, ...)
 ```
 
-```ts [1|3-4|6-9|11-12|14-15]
-const effect: Effect.Effect<never, never, number> = Effect.succeed(42);
+```ts [1|3-4|6-9|11-14|16-17]
+const effect: Effect.Effect<number> = Effect.succeed(42);
 
-// Effect.Effect<never, never, string>
+// Effect<string, never, never>
 const mappedEffect = effect.pipe(Effect.map((n: number) => n.toString()));
 
-// Effect.Effect<never, never, string>
+// Effect<string, never, never>
 const flatEffect = effect.pipe(
   Effect.flatMap((n: number) => Effect.succeed(n.toString()))
 );
 
-// Effect.Effect<never, never, number>
-const tappedEffect = effect.pipe(Effect.tap((n: number) => console.log(n)));
+// Effect<string, never, never>
+const thenEffect = effect.pipe(
+  Effect.andThen((n: number) => Effect.succeed(n.toString()))
+);
 
-// Effect.Effect<never, never, [number, number]>
-const combinedEffect = Effect.all([effect, effect]);
+// Effect<number, never, never>
+const tappedEffect = effect.pipe(Effect.tap((n: number) => console.log(n)));
 ```
 
 --
@@ -712,7 +755,7 @@ We can turn our `lastPrice` function from
 
 ```ts
 // Promise<Quote | null>
-const lastPrice = (symbol: string) => {
+const lastPrice = async (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
@@ -723,13 +766,13 @@ const lastPrice = (symbol: string) => {
 to
 
 ```ts [|5|6|7|1]
-// Effect.Effect<never, Cause.UnknownException | ParseResult.ParseError, Quote>
+// Effect<Quote, Cause.UnknownException | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   return pipe(
     Effect.tryPromise(() => fetch(url)),
-    Effect.flatMap((res) => Effect.tryPromise(() => res.json())),
-    Effect.flatMap((json) => Schema.parse(ResponseSchema)(json))
+    Effect.andThen((res) => res.json()),
+    Effect.andThen(Schema.parse(ResponseSchema))
   );
 };
 ```
@@ -740,7 +783,7 @@ Another approach using generators
 
 ```ts
 // Promise<Quote | null>
-const lastPrice = (symbol: string) => {
+const lastPrice = async (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
@@ -752,7 +795,7 @@ to
 
 <!-- prettier-ignore -->
 ```ts [|4|5|6|1]
-// Effect.Effect<never, Cause.UnknownException | ParseResult.ParseError, Quote>
+// Effect<Quote, Cause.UnknownException | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = yield* _(Effect.tryPromise(() => fetch(url)));
@@ -775,7 +818,7 @@ class FetchError extends Data.TaggedError("FetchError")<{
   message: string;
 }> {}
 
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(
@@ -787,7 +830,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   return yield* _(Schema.parse(ResponseSchema)(json));
 });
 
-// Effect.Effect<never, never, Quote | null>
+// Effect<Quote | null, never, never>
 const program = lastPrice("NN.AS").pipe(
   Effect.catchTags({
     FetchError: (error: FetchError) => {
@@ -808,22 +851,22 @@ const program = lastPrice("NN.AS").pipe(
 Running `Effect`s
 
 ```ts [1-2|4-5|7-8|10-11|13-14|16-17]
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const program = lastPrice("NN.AS");
 
 // Promise<Quote>
 const promise = Effect.runPromise(program);
 
-// Promise<Exit<FetchError | ParseResult.ParseError, Quote>>
+// Promise<Exit<Quote, FetchError | ParseResult.ParseError>>
 const promiseExit = Effect.runPromiseExit(program);
 
 // Quote
 const quote = Effect.runSync(program);
 
-// Exit<FetchError | ParseResult.ParseError, Quote>
+// Exit<Quote, FetchError | ParseResult.ParseError>
 const quoteExit = Effect.runSyncExit(program);
 
-// RuntimeFiber<FetchError | ParseResult.ParseError, Quote>
+// RuntimeFiber<Quote, FetchError | ParseResult.ParseError>
 Effect.runFork(program);
 ```
 
@@ -837,14 +880,14 @@ class FetchError extends Data.TaggedError("FetchError")<{
   message: string;
 }> {}
 
-// Effect.Effect<never, FetchError, unknown>
+// Effect<unknown, FetchError, never>
 const effectfulFetch = (...args: Parameters<typeof fetch>) =>
   Effect.tryPromise({
     try: () => fetch(...args).then((res) => res.json()),
     catch: () => new FetchError({ message: `Failed to fetch ${args[0]}` }),
   });
 
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
@@ -852,7 +895,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
 });
 
 export const handler = async (event) => {
-  // Effect.Effect<never, never, Quote>
+  // Effect<Quote, never, never>
   const program = lastPrice("NN.AS").pipe(Effect.orDie);
 
   return await Effect.runPromise(program);
@@ -865,7 +908,7 @@ Dependency Management (Context & Layers)
 
 ```ts
 // Overly simplified
-type Effect<R, E, A> = (context: R) => E | A;
+type Effect<A, E, R> = (context: R) => E | A;
 ```
 
 - `R` - Dependencies
@@ -876,7 +919,7 @@ import { Effect } from "effect";
 
 const baseUrl = "https://query2.finance.yahoo.com/v8";
 
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
@@ -884,7 +927,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
 });
  
 export const handler = async (event) => {
-  // Effect.Effect<never, never, Quote>
+  // Effect<Quote, never, never>
   const program = lastPrice("NN.AS").pipe(Effect.orDie);
  
   return await program.pipe(Effect.runPromise);
@@ -901,7 +944,7 @@ Let's define a service
 interface QuoteClient {
   lastPrice: (
     symbol: string
-  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+  ) => Effect.Effect<Quote, FetchError | ParseResult.ParseError>;
 }
 ```
 
@@ -909,7 +952,7 @@ interface QuoteClient {
 import { Context } from "effect";
 
 // Context.Tag<QuoteClient, QuoteClient>
-const QuoteClient = Context.Tag<QuoteClient>();
+const QuoteClient = Context.GenericTag<QuoteClient>("@effect-app/QuoteClient");
 ```
 
 <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -927,14 +970,14 @@ import { Effect, Context } from "effect";
 interface QuoteClient {
   lastPrice: (
     symbol: string
-  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+  ) => Effect.Effect<Quote, FetchError | ParseResult.ParseError>;
 }
-const QuoteClient = Context.Tag<QuoteClient>();
+const QuoteClient = Context.GenericTag<QuoteClient>("@effect-app/QuoteClient");
 
 // ...
  
 export const handler = async (event) => {
-  // Effect.Effect<QuoteClient, never, Quote>
+  // Effect<Quote, never, QuoteClient>
   const program = QuoteClient.pipe(
     Effect.flatMap((client) => client.lastPrice("NN.AS")),
     Effect.orDie,
@@ -957,11 +1000,11 @@ import { Effect, Context } from "effect";
 interface QuoteClient {
   lastPrice: (
     symbol: string
-  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+  ) => Effect.Effect<Quote, FetchError | ParseResult.ParseError>;
 }
-const QuoteClient = Context.Tag<QuoteClient>();
+const QuoteClient = Context.GenericTag<QuoteClient>("@effect-app/QuoteClient");
 
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
@@ -969,7 +1012,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
 });
 
 export const handler = async (event) => {
-  // Effect.Effect<QuoteClient, never, Quote>
+  // Effect<Quote, never, QuoteClient>
   const program = QuoteClient.pipe(
     Effect.flatMap((client) => client.lastPrice("NN.AS")),
     Effect.orDie,
@@ -993,13 +1036,13 @@ import { Effect, Context } from "effect";
 interface QuoteClient {
   lastPrice: (
     symbol: string
-  ) => Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>;
+  ) => Effect.Effect<Quote, FetchError | ParseResult.ParseError>;
 }
-const QuoteClient = Context.Tag<QuoteClient>();
+const QuoteClient = Context.GenericTag<QuoteClient>("@effect-app/QuoteClient");
 
 const baseUrl = "https://query2.finance.yahoo.com/v8";
 
-// Effect.Effect<never, FetchError | ParseResult.ParseError, Quote>
+// Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
@@ -1009,7 +1052,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
 export const YahooQuoteClientImpl = Layer.succeed(QuoteClient, { lastPrice });
 
 export const handler = async (event) => {
-  // Effect.Effect<QuoteClient, never, Quote>
+  // Effect<Quote, never, QuoteClient>
   const program = QuoteClient.pipe(
     Effect.flatMap((client) => client.lastPrice("NN.AS")),
     Effect.orDie,
@@ -1027,13 +1070,13 @@ export const handler = async (event) => {
 Configuration Management
 
 <!-- prettier-ignore -->
-```ts [9,10|5|4|15-17|15-17,27]
+```ts [9,10|5|6|15-17|15-17,27]
 import { Effect, Config } from "effect";
 
-// Effect.Effect<
-//   never,
+// Effect<
+//   Quote,
 //   FetchError | ParseResult.ParseError | ConfigError.ConfigError,
-//   Quote
+//   never
 // >
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const baseUrl = yield* _(Config.string("YAHOO_BASE_URL"));
@@ -1047,7 +1090,7 @@ const ConfigImpl = Layer.setConfigProvider(
 );
 
 export const handler = async (event) => {
-  // Effect.Effect<QuoteClient, never, Quote>
+  // Effect<Quote, never, QuoteClient>
   const program = QuoteClient.pipe(
     Effect.flatMap((client) => client.lastPrice("NN.AS")),
     Effect.orDie
@@ -1065,7 +1108,7 @@ export const handler = async (event) => {
 `Effect` Runtime System
 
 ```ts [|1-2|4-5|7-10|19]
-// Layer.Layer<never, never, QuoteClient>
+// Layer<QuoteClient, never, never>
 const LambdaLayer = Layer.merge(YahooQuoteClientImpl, ConfigImpl);
 
 // Scope.CloseableScope
@@ -1077,7 +1120,7 @@ const lambdaRuntime = Effect.runSync(
 );
 
 export const handler = async () => {
-  // Effect.Effect<QuoteClient, never, Quote>
+  // Effect<Quote, never, QuoteClient>
   const program = QuoteClient.pipe(
     Effect.flatMap((client) => client.lastPrice("NN.AS")),
     Effect.orDie
