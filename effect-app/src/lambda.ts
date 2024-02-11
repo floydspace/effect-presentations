@@ -25,8 +25,7 @@ export const effectHandler: EffectHandler<
     const quote = yield* _(client.lastPrice(symbol));
 
     if (!quote) {
-      yield* _(Effect.fail(new Error("No quote found")));
-      return;
+      return yield* _(Console.error("No quote found"));
     }
 
     yield* _(store.updateQuote(symbol, quote));

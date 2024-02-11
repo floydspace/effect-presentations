@@ -1,7 +1,7 @@
 import { Arbitrary } from "@effect/schema";
 import { Arg, Substitute } from "@fluffy-spoon/substitute";
 import { Context, SNSEvent, SNSEventRecord } from "aws-lambda";
-import { Cause, Effect, Exit, Layer } from "effect";
+import { Effect, Exit, Layer } from "effect";
 import * as fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { EventBus } from "../src/bus";
@@ -43,8 +43,8 @@ describe("effectHandler", () => {
     );
 
     expect(Exit.isSuccess(response)).toBeTruthy();
-    InstrumentStoreSub.received(1).updateQuote(symbol, quoteSample);
     QuoteClientSub.received(1).lastPrice(symbol);
+    InstrumentStoreSub.received(1).updateQuote(symbol, quoteSample);
     EventBusSub.received(1).publish("quote_updated", {
       symbol,
       quote: quoteSample,
@@ -76,11 +76,7 @@ describe("effectHandler", () => {
       Effect.runPromiseExit
     );
 
-    expect(Exit.isFailure(response)).toBeTruthy();
-    const { cause } = response as Exit.Failure<void, never>;
-    expect(Cause.isDie(cause)).toBeTruthy();
-    const { defect } = cause as Cause.Die;
-    expect(defect).toEqual(new Error("No quote found"));
+    expect(Exit.isSuccess(response)).toBeTruthy();
     expect(mockLastPrice).toHaveBeenCalledTimes(1);
     expect(mockLastPrice).toHaveBeenCalledWith(symbol);
     expect(mockUpdateQuote).toHaveBeenCalledTimes(0);

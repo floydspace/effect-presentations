@@ -17,8 +17,7 @@ export const handler: Handler<SNSEvent, void> = async (event) => {
   const quote = await client.lastPrice(symbol);
 
   if (!quote) {
-    console.error("No quote found");
-    return;
+    return console.error("No quote found");
   }
 
   await store.updateQuote(symbol, quote);
