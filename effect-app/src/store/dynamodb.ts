@@ -14,8 +14,8 @@ const InstrumentStoreLayer = Layer.effect(
 
     const getById: InstrumentStore["getById"] = (id) =>
       db.get({ TableName, Key: { id } }).pipe(
-        Effect.flatMap((response) => Effect.fromNullable(response.Item)),
-        Effect.flatMap(Schema.decodeUnknown(InstrumentDocument)),
+        Effect.andThen((response) => Effect.fromNullable(response.Item)),
+        Effect.andThen(Schema.decodeUnknown(InstrumentDocument)),
         Effect.catchAll((e) => new Cause.UnknownException(e))
       );
 

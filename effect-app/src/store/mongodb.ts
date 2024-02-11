@@ -30,11 +30,11 @@ export const mongoDbImpl = (mongodbUrl: string, options?: MongoClientOptions) =>
   Effect.acquireRelease(
     mongoDbConnect(mongodbUrl, options),
     mongoDbClose()
-  ).pipe(Effect.flatMap((client) => Effect.try(() => client.db())));
+  ).pipe(Effect.andThen((client) => Effect.try(() => client.db())));
 
 export const MongoDbLayer = Layer.scoped(
   DatabaseTag,
-  Config.string("MONGODB_URL").pipe(Effect.flatMap(mongoDbImpl))
+  Config.string("MONGODB_URL").pipe(Effect.andThen(mongoDbImpl))
 );
 
 const InstrumentStoreLayer = Layer.effect(
@@ -44,20 +44,20 @@ const InstrumentStoreLayer = Layer.effect(
 
     const getById: InstrumentStore["getById"] = (id) =>
       Schema.decode(ObjectIdFromString)(id).pipe(
-        Effect.flatMap((_id) =>
+        Effect.andThen((_id) =>
           Effect.tryPromise(() =>
             db
               .collection<InstrumentDocument>("instruments")
               .findOne({ _id, deleted_at: null })
           )
         ),
-        Effect.flatMap(Effect.fromNullable),
-        Effect.flatMap(Schema.decode(InstrumentDocument))
+        Effect.andThen(Effect.fromNullable),
+        Effect.andThen(Schema.decode(InstrumentDocument))
       );
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
       Schema.decode(ObjectIdFromString)(id).pipe(
-        Effect.flatMap((_id) =>
+        Effect.andThen((_id) =>
           Effect.tryPromise(() =>
             db
               .collection("instruments")
