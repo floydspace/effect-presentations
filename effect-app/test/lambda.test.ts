@@ -1,14 +1,15 @@
 import { Arbitrary } from "@effect/schema";
-import { Substitute, Arg } from "@fluffy-spoon/substitute";
+import { Arg, Substitute } from "@fluffy-spoon/substitute";
 import { Context, SNSEvent, SNSEventRecord } from "aws-lambda";
 import { Cause, Effect, Exit, Layer } from "effect";
 import * as fc from "fast-check";
+import { describe, expect, it, vi } from "vitest";
 import { EventBus } from "../src/bus";
 import { effectHandler } from "../src/lambda";
 import { QuoteClient } from "../src/quoteClient";
 import { InstrumentStore, Quote } from "../src/store";
 
-const QuoteArb = Arbitrary.make(Quote)(fc);
+const QuoteArbitrary = Arbitrary.make(Quote)(fc);
 
 describe("effectHandler", () => {
   it("should handle the event", async () => {
@@ -20,7 +21,7 @@ describe("effectHandler", () => {
         } as SNSEventRecord,
       ],
     };
-    const quoteSample = fc.sample(QuoteArb, 1)[0];
+    const quoteSample = fc.sample(QuoteArbitrary, 1)[0];
 
     const EventBusSub = Substitute.for<EventBus>();
     const QuoteClientSub = Substitute.for<QuoteClient>();
@@ -60,9 +61,9 @@ describe("effectHandler", () => {
       ],
     };
 
-    const mockPublish = jest.fn(() => Effect.unit);
-    const mockLastPrice = jest.fn(() => Effect.succeed(null));
-    const mockUpdateQuote = jest.fn(() => Effect.unit);
+    const mockPublish = vi.fn(() => Effect.unit);
+    const mockLastPrice = vi.fn(() => Effect.succeed(null));
+    const mockUpdateQuote = vi.fn(() => Effect.unit);
 
     const MockLambdaLive = Layer.mergeAll(
       Layer.succeed(EventBus, { publish: mockPublish }),

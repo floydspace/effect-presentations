@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.131",
-    "esbuild": "^0.19.12"
+    "esbuild": "^0.19.12",
+    "fast-check": "^3.15.1",
+    "zod-fast-check": "^0.10.1"
   }
 }

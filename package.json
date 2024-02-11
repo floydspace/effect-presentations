@@ -6,8 +6,11 @@
       "bson@6.2.0": "patches/bson@6.2.0.patch"
     }
   },
+  "scripts": {
+    "test": "vitest"
+  },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "vitest": "^1.2.2"
   }
 }
