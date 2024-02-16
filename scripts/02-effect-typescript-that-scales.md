@@ -1,8 +1,6 @@
 ---
-theme: blood
-controls: false
-progress: false
-highlightTheme: doesntExist
+theme: css/nn.css
+highlightTheme: css/github-dark-default.css
 ---
 <style>
 code.language-typescript {
@@ -11,7 +9,7 @@ code.language-typescript {
 }
 </style>
 
-![[effect-logo.png]]
+<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
 ## Effect:
 ## Is it "TypeScript"?
 

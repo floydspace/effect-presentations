@@ -11,6 +11,43 @@ Or Functional Programming for Functions
 
 ---
 
+**What experience do you have with functional programming?**
+
+1. _I prefer OOP (imperative code)_
+2. _I like to write functional code (ramda, lodash/fp, etc.)_
+3. _I have experience with the real (algebraic) FP (Haskell, Scala, F#, etc.)_
+
+---
+
+<!-- <grid drag="70 0" drop="20 10">
+</grid> -->
+<grid drag="30 70" drop="0 10">
+Who am I?
+<div style="text-align: right"><B>Victor Korzunin</B></div>
+<img src="https://avatars.githubusercontent.com/u/5180700" alt="My Image" style="border: none; width: 200px" />
+</grid>
+<grid drag="100 45" drop="25 30">
+
+- Software Engineer, 8+ years of experience
+
+  - 7+ years with TypeScript
+  - 5+ years with Serverless and AWS
+
+- Open-Source Contributor
+
+  <img src="https://camo.githubusercontent.com/8e66857b4f7f7c1c485f7098eb4b6cbcc6aa94e2c9af83979cbe273891587d61/68747470733a2f2f6769746875622d726561646d652d73746174732e76657263656c2e6170702f6170693f757365726e616d653d666c6f796473706163652673686f775f69636f6e733d7472756526686964655f626f726465723d7472756526686964655f7469746c653d74727565" alt="My Image" style="border: none; width: 400px;margin:0" />
+
+- Ex- professional trader
+
+    </grid>
+    <grid drag="30 140" drop="0 10">
+
+https://github.com/floydspace
+https://twitter.com/F1oydRose
+</grid>
+
+---
+
 Overview
 
 ```ts [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53]
@@ -101,7 +138,7 @@ const chartResultSchema = z
       : null
   );
 
-const responseSchema = z
+const quoteSchema = z
   .object({ chart: z.object({ result: z.array(chartResultSchema) }) })
   .transform((value) => value.chart.result[0]);
 
@@ -112,7 +149,7 @@ class YahooQuoteClient implements QuoteClient {
     const url = `${this.baseUrl}/finance/chart/${symbol}?interval=1d`;
     const res = await fetch(url);
     const json = await res.json();
-    return responseSchema.parse(json);
+    return quoteSchema.parse(json);
   }
 }
 
@@ -177,14 +214,25 @@ async function lastPrice(symbol: string): Promise<Quote | null> {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
-  return responseSchema.parse(json);
+  return quoteSchema.parse(json);
 }
 ```
 
 1. Errors <!-- .element: class="fragment" data-fragment-index="1" -->
+
    - we need to handle errors in multiple places <!-- .element: class="fragment" data-fragment-index="1" -->
    - different ways of handling errors in different places <!-- .element: class="fragment" data-fragment-index="2" -->
    - errors are not typed <!-- .element: class="fragment" data-fragment-index="3" -->
+
+   ```ts [3]
+   try {
+     // ...
+   } catch (error: unknown) {
+     handleError(error);
+   }
+   ```
+
+   <!-- .element: class="fragment" data-fragment-index="3" -->
 
 --
 
@@ -306,7 +354,7 @@ class YahooQuoteClient implements QuoteClient {
     const url = `${this.baseUrl}/finance/chart/${symbol}?interval=1d`;
     const res = await fetch(url);
     const json = await res.json();
-    return responseSchema.parse(json);
+    return quoteSchema.parse(json);
   }
 }
 
@@ -427,7 +475,7 @@ class YahooQuoteClient implements QuoteClient {
     const url = `${this.baseUrl}/finance/chart/${symbol}?interval=1d`;
     const res = await fetch(url);
     const json = await res.json();
-    return responseSchema.parse(json);
+    return quoteSchema.parse(json);
   }
 }
 
@@ -510,7 +558,7 @@ module.exports.handler = handler;
 
 ### But <!-- .element: class="fragment" data-fragment-index="1" -->
 
-- IaC solutions usually are not type safe enough <!-- .element: class="fragment" data-fragment-index="1" -->
+- DI solutions usually are not type safe enough or lack type inference <!-- .element: class="fragment" data-fragment-index="1" -->
 - They enforce writing OOP code <!-- .element: class="fragment" data-fragment-index="1" -->
 - They are not portable and also a dependency <!-- .element: class="fragment" data-fragment-index="1" -->
 - They based on "reflect-metadata" and/or decorators <!-- .element: class="fragment" data-fragment-index="1" -->
@@ -655,13 +703,13 @@ import { Effect } from "effect";
 const failure: Effect.Effect<never, Error> = Effect.fail(new Error());
 ```
 
-- `A` - `void` - never returns
+- `A` - `never` - never returns
 - `E` - `Error` - fails with `Error`
 - `R` - `never` - no dependencies
 
 --
 
-`Effect` adapters
+`Effect` constructors
 
 ```ts [1-4|6-10|12-13|15-19]
 // Effect<number, never, never>
@@ -759,7 +807,7 @@ const lastPrice = async (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
-  return responseSchema.parse(json);
+  return quoteSchema.parse(json);
 };
 ```
 
@@ -772,7 +820,7 @@ const lastPrice = (symbol: string) => {
   return pipe(
     Effect.tryPromise(() => fetch(url)),
     Effect.andThen((res) => res.json()),
-    Effect.andThen(Schema.parse(ResponseSchema))
+    Effect.andThen(Schema.decodeUnknown(QuoteSchema))
   );
 };
 ```
@@ -787,7 +835,7 @@ const lastPrice = async (symbol: string) => {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = await fetch(url);
   const json = await res.json();
-  return responseSchema.parse(json);
+  return quoteSchema.parse(json);
 };
 ```
 
@@ -800,7 +848,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const res = yield* _(Effect.tryPromise(() => fetch(url)));
   const json = yield* _(Effect.tryPromise(() => res.json()));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 }); 
 ```
 
@@ -813,10 +861,11 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
 Handling errors
 
 <!-- prettier-ignore -->
-```ts [|8-13|10|1-3,5,11|18-30|18|19-24|25-28|17,29]
-class FetchError extends Data.TaggedError("FetchError")<{
-  message: string;
-}> {}
+```ts [|9-14|11|1-4,6,12|19-31|19|20-25|26-29|18,30]
+class FetchError {
+  _tag = "FetchError" as const;
+  constructor(public message: string) {}
+}
 
 // Effect<Quote, FetchError | ParseResult.ParseError, never>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
@@ -824,10 +873,10 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const json = yield* _(
     Effect.tryPromise({
       try: () => fetch(url).then((res) => res.json()),
-      catch: () => new FetchError({ message: `Failed to fetch ${url}` }),
+      catch: () => new FetchError(`Failed to fetch ${url}`),
     })
   );
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
 
 // Effect<Quote | null, never, never>
@@ -891,7 +940,7 @@ const effectfulFetch = (...args: Parameters<typeof fetch>) =>
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
 
 export const handler = async (event) => {
@@ -923,7 +972,7 @@ const baseUrl = "https://query2.finance.yahoo.com/v8";
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
  
 export const handler = async (event) => {
@@ -938,7 +987,7 @@ export const handler = async (event) => {
 
 --
 
-Let's define a service
+Let's define a service interface
 
 ```ts
 interface QuoteClient {
@@ -1008,7 +1057,7 @@ const QuoteClient = Context.GenericTag<QuoteClient>("@effect-app/QuoteClient");
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
 
 export const handler = async (event) => {
@@ -1046,7 +1095,7 @@ const baseUrl = "https://query2.finance.yahoo.com/v8";
 const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
 
 export const YahooQuoteClientImpl = Layer.succeed(QuoteClient, { lastPrice });
@@ -1082,7 +1131,7 @@ const lastPrice = (symbol: string) => Effect.gen(function* (_) {
   const baseUrl = yield* _(Config.string("YAHOO_BASE_URL"));
   const url = `${baseUrl}/finance/chart/${symbol}?interval=1d`;
   const json = yield* _(effectfulFetch(url));
-  return yield* _(Schema.parse(ResponseSchema)(json));
+  return yield* _(Schema.decodeUnknown(QuoteSchema)(json));
 });
 
 const ConfigImpl = Layer.setConfigProvider(
@@ -1116,7 +1165,7 @@ const scope = Effect.runSync(Scope.make());
 
 // Runtime.Runtime<QuoteClient>
 const lambdaRuntime = Effect.runSync(
-  Layer.toRuntime(LambdaLayer).pipe(Scope.extend(scope))
+  Scope.use(Layer.toRuntime(LambdaLayer), scope)
 );
 
 export const handler = async () => {
@@ -1149,7 +1198,9 @@ export const handler = async () => {
 
 Final Effect app
 
-```ts [279-301|237-240|280|281|286-289|291-293|295,297-298|301|303-307,309|268-277|242-266|243|244-247|248,255,262-263|33-42,44|73-89|76|68-71|62-66|64|48-54|56-60|96-100,102]
+<!-- [279-301|237-240|280|281|286-289|291-293|295,297-298|301|303-307,309|268-277|242-266|243|244-247|248,255,262-263|33-42,44|73-89|76|68-71|62-66|64|48-54|56-60|96-100,102] -->
+
+```ts
 import {
   PublishCommandInput,
   PublishCommandOutput,

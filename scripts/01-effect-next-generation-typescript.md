@@ -1,8 +1,6 @@
 ---
-theme: blood
-controls: false
-progress: false
-highlightTheme: doesntExist
+theme: css/nn.css
+highlightTheme: css/github-dark-default.css
 ---
 
 <style>
@@ -12,7 +10,7 @@ code.language-typescript {
 }
 </style>
 
-![[effect-logo.png]]
+<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
 
 # Effect
 
@@ -28,19 +26,13 @@ typescript has been a really big step, but the primatives its built on are still
 
 How often have you seen this kind of code?
 
-<!-- ```tsx
+```ts
 async function getData(): Data {
   const response = await fetch("https://api.example.com/foo");
   const json = await response.json();
   return dataSchema.parse(json);
 }
-``` -->
-<pre>
-<code class="language-typescript">async function getData(): Data {
-  const response = await fetch("https://api.example.com/foo");
-  const json = await response.json();
-  return dataSchema.parse(json);
-}</code></pre>
+```
 
 What problems are there here?
 
@@ -51,19 +43,13 @@ The biggest problem is that this function could crash your program, but doesn't 
 
 ---
 
-<!-- ```tsx
+```ts [2|3|4]
 async function getData(): Data {
   const response = await fetch("...");
   const json = await response.json();
   return dataSchema.parse(json);
 }
-``` -->
-<pre>
-<code class="language-typescript">async function getData(): Data {
-  const response = await fetch("...");
-  const json = await response.json();
-  return dataSchema.parse(json);
-}</code></pre>
+```
 
 1.  `fetch` can reject
 2.  `json` can reject
@@ -78,9 +64,9 @@ Unsafe assumptions crash our programs at runtime and wake us up at 4am.
 <!-- ```tsx
 let data: Data;
 try {
-  data = getData();
-} catch (exception: unknown) {
-  switch (exception) {
+  data = await getData();
+} catch (error: unknown) {
+  switch (error) {
 	  /* ... */
   }
 }
@@ -88,9 +74,9 @@ try {
 <pre>
 <code class="language-typescript">let data: Data;
 try {
-  data = getData();
-} catch (exception: unknown) {
-  switch (exception) {
+  data = await getData();
+} catch (error: unknown) {
+  switch (error) {
 	  /* ... */
   }
 }</code></pre>
@@ -165,11 +151,7 @@ function getData(): Effect.Effect<
 }
 ``` -->
 <pre>
-<code style="font-size:  .75em; line-height: 1em;" class="language-typescript big-example">function getData(): Effect.Effect&lt;
-  never,
-  FetchError | JSONError | ParseError,
-  Data
-&gt; {
+<code style="font-size:  .75em; line-height: 1em;" class="language-typescript big-example">function getData(): Effect.Effect&lt;never, FetchError | JSONError | ParseError, Data&gt; {
   return pipe(
     Effect.tryPromise({
       try: () => fetch("https://api.example.com/foo"),
@@ -744,8 +726,7 @@ And lastly, if you think you could get out of using Effect because 'functional p
 
 ---
 
-![[effect-logo.png]]
-
+<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
 # Effect
 
 ### Next-Generation Typescript

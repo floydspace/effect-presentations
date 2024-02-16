@@ -1,9 +1,9 @@
 ---
-theme: blood
-highlightTheme: css/vs2015.css
+theme: css/nn.css
+highlightTheme: css/github-dark-default.css
 ---
 # Effect for Beginners
-![[effect-logo.png]]
+<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
 ### A guide through Effect's core concepts
 
 notes:
@@ -12,14 +12,6 @@ Effect is a typescript library that gives you the tools to make it easy to write
 We'll start with the basics and then move on to slowly build an example program piece by piece, which by the end will feature concurrent asynchronous work, granular error handling, dependency injection and benchmarking.
 
 If you are still curious about why Effect is worth learning, feel free check out my other videos on Effect linked in the cards now, and come back after.
-
----
-
-Sponsored By: \
-The Effect Team
-
-notes:
-Effect is an amazing library and I want to quickly thank the Effect team for financially supporting the creation of content around it. Now on to the tutorial!
 
 ---
 ```
