@@ -74,6 +74,9 @@ importers:
       '@effect-aws/lib-dynamodb':
         specifier: ^1.4.0
         version: 1.4.0(@effect-aws/client-dynamodb@1.6.0(effect@3.12.1))(effect@3.12.1)
+      '@effect/platform':
+        specifier: ^0.72.1
+        version: 0.72.1(effect@3.12.1)
       effect:
         specifier: ^3.12.1
         version: 3.12.1
@@ -329,6 +332,11 @@ packages:
     peerDependencies:
       '@effect-aws/client-dynamodb': ^1.0.0
       effect: '>=3.0.0 <4.0.0'
+
+  '@effect/platform@0.72.1':
+    resolution: {integrity: sha512-hCnO9cWsz0yns5lYVxCPBEmy9RAqcTZ7USYgwpFBLpcpNo3uzzVnU69gfBxyq2sYvTHF7yYvH1J42NfOdnof0w==}
+    peerDependencies:
+      effect: ^3.12.1
 
   '@esbuild/aix-ppc64@0.19.12':
     resolution: {integrity: sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA==}
@@ -1270,6 +1278,9 @@ packages:
     resolution: {integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==}
     engines: {node: '>=8'}
 
+  find-my-way-ts@0.1.5:
+    resolution: {integrity: sha512-4GOTMrpGQVzsCH2ruUn2vmwzV/02zF4q+ybhCIrw/Rkt3L8KWcycdC6aJMctJzwN4fXD4SD5F/4B9Sksh5rE0A==}
+
   foreground-child@3.1.1:
     resolution: {integrity: sha512-TMKDUnIte6bfb5nWv7V/caI169OHgvwjb7V4WkeUvbQQdjr5rWKqHFiKWb/fcOwB+CzBT+qbWjvj+DVwRskpIg==}
     engines: {node: '>=14'}
@@ -1496,6 +1507,9 @@ packages:
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
+
+  multipasta@0.2.5:
+    resolution: {integrity: sha512-c8eMDb1WwZcE02WVjHoOmUVk7fnKU/RmUcosHACglrWAuPQsEJv+E8430sXj6jNc1jHw0zrS16aCjQh4BcEb4A==}
 
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
@@ -2604,6 +2618,12 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
+  '@effect/platform@0.72.1(effect@3.12.1)':
+    dependencies:
+      effect: 3.12.1
+      find-my-way-ts: 0.1.5
+      multipasta: 0.2.5
+
   '@esbuild/aix-ppc64@0.19.12':
     optional: true
 
@@ -3575,6 +3595,8 @@ snapshots:
     dependencies:
       to-regex-range: 5.0.1
 
+  find-my-way-ts@0.1.5: {}
+
   foreground-child@3.1.1:
     dependencies:
       cross-spawn: 7.0.3
@@ -3757,6 +3779,8 @@ snapshots:
   mri@1.2.0: {}
 
   ms@2.1.2: {}
+
+  multipasta@0.2.5: {}
 
   mz@2.7.0:
     dependencies:

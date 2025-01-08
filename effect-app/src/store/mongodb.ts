@@ -30,7 +30,7 @@ export const mongoDbImpl = (mongodbUrl: string, options?: MongoClientOptions) =>
   ).pipe(Effect.andThen((client) => client.db()));
 
 export class MongoDbService extends Effect.Service<MongoDbService>()(
-  "app/MongoDbService",
+  "@effect-app/MongoDbService",
   {
     scoped: Effect.gen(function* () {
       const mongodbUrl = yield* Config.string("MONGODB_URL");

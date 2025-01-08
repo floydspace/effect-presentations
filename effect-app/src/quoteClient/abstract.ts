@@ -1,6 +1,9 @@
-import { Context, Effect } from "effect";
+import { Context, Data, Effect } from "effect";
 import { Quote } from "../store";
-import { FetchError } from "./helper";
+
+export class FetchError extends Data.TaggedError("FetchError")<{
+  message: string;
+}> {}
 
 export interface QuoteClient {
   lastPrice: (symbol: string) => Effect.Effect<Quote | null, FetchError>;
