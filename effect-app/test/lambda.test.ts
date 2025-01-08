@@ -1,7 +1,7 @@
-import { Arg, Substitute } from "@fluffy-spoon/substitute";
+import { Arg, Substitute, SubstituteOf } from "@fluffy-spoon/substitute";
 import { Context, SNSEvent, SNSEventRecord } from "aws-lambda";
 import { Arbitrary, Effect, Exit, FastCheck, Layer } from "effect";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { EventBus } from "../src/bus";
 import { effectHandler } from "../src/lambda";
 import { QuoteClient } from "../src/quoteClient";
@@ -15,16 +15,22 @@ const event: SNSEvent = {
 };
 
 describe("effectHandler", () => {
-  it("should handle the event", async () => {
-    const quoteSample = FastCheck.sample(QuoteArbitrary, 1)[0];
+  let EventBusSub: SubstituteOf<EventBus>;
+  let QuoteClientSub: SubstituteOf<QuoteClient>;
+  let InstrumentStoreSub: SubstituteOf<InstrumentStore>;
 
-    const EventBusSub = Substitute.for<EventBus>();
-    const QuoteClientSub = Substitute.for<QuoteClient>();
-    const InstrumentStoreSub = Substitute.for<InstrumentStore>();
+  beforeEach(() => {
+    EventBusSub = Substitute.for<EventBus>();
+    QuoteClientSub = Substitute.for<QuoteClient>();
+    InstrumentStoreSub = Substitute.for<InstrumentStore>();
 
     EventBusSub.publish(Arg.all()).returns(Effect.void);
-    QuoteClientSub.lastPrice(Arg.all()).returns(Effect.succeed(quoteSample));
     InstrumentStoreSub.updateQuote(Arg.all()).returns(Effect.void);
+  });
+
+  it("should handle the event", async () => {
+    const quoteSample = FastCheck.sample(QuoteArbitrary, 1)[0];
+    QuoteClientSub.lastPrice(Arg.all()).returns(Effect.succeed(quoteSample));
 
     const MockLambdaLive = Layer.mergeAll(
       Layer.succeed(EventBus, EventBusSub),
@@ -47,14 +53,12 @@ describe("effectHandler", () => {
   });
 
   it("should fail if no quote found", async () => {
-    const mockPublish = vi.fn(() => Effect.void);
-    const mockLastPrice = vi.fn(() => Effect.succeed(null));
-    const mockUpdateQuote = vi.fn(() => Effect.void);
+    QuoteClientSub.lastPrice(Arg.all()).returns(Effect.succeed(null));
 
     const MockLambdaLive = Layer.mergeAll(
-      Layer.succeed(EventBus, { publish: mockPublish }),
-      Layer.succeed(QuoteClient, { lastPrice: mockLastPrice }),
-      Layer.succeed(InstrumentStore, { updateQuote: mockUpdateQuote })
+      Layer.succeed(EventBus, EventBusSub),
+      Layer.succeed(QuoteClient, QuoteClientSub),
+      Layer.succeed(InstrumentStore, InstrumentStoreSub)
     );
 
     const response = await effectHandler(event, {} as Context).pipe(
@@ -63,9 +67,8 @@ describe("effectHandler", () => {
     );
 
     expect(Exit.isSuccess(response)).toBeTruthy();
-    expect(mockLastPrice).toHaveBeenCalledTimes(1);
-    expect(mockLastPrice).toHaveBeenCalledWith(symbol);
-    expect(mockUpdateQuote).toHaveBeenCalledTimes(0);
-    expect(mockPublish).toHaveBeenCalledTimes(0);
+    QuoteClientSub.received(1).lastPrice(symbol);
+    InstrumentStoreSub.didNotReceive().updateQuote(Arg.all());
+    EventBusSub.didNotReceive().publish(Arg.all());
   });
 });
