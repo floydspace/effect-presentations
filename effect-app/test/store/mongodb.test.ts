@@ -3,7 +3,7 @@ import { Substitute, SubstituteOf } from "@fluffy-spoon/substitute";
 import { ConfigProvider, Effect, Exit, Layer, Runtime } from "effect";
 import { Db, MongoClient } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DatabaseTag, MongoDbLayer } from "../../src/store/mongodb";
+import { MongoDbService } from "../../src/store/mongodb";
 
 const mockConnect = vi.spyOn(MongoClient, "connect");
 
@@ -12,7 +12,7 @@ const ConfigLayer = Layer.setConfigProvider(
     new Map([["MONGODB_URL", "mongodb://localhost:27017"]])
   )
 );
-const TestLayer = Layer.provide(MongoDbLayer, ConfigLayer);
+const TestLayer = Layer.provide(MongoDbService.Default, ConfigLayer);
 
 describe("MongoDbLayer", () => {
   let MongoClientSub: SubstituteOf<MongoClient>;
@@ -31,7 +31,7 @@ describe("MongoDbLayer", () => {
   it("should connect to MongoDB and close the connection automatically", async () => {
     console.log("start the program...");
 
-    const result = await DatabaseTag.pipe(
+    const result = await MongoDbService.pipe(
       Effect.provide(TestLayer),
       Effect.runPromiseExit
     );
@@ -39,7 +39,7 @@ describe("MongoDbLayer", () => {
     console.log("end the program...");
 
     expect(Exit.isSuccess(result)).toBeTruthy();
-    expect((result as Exit.Success<Db, never>).value).toBe(DbSub);
+    expect((result as Exit.Success<MongoDbService, never>).value).toBe(DbSub);
 
     expect(mockConnect).toHaveBeenCalledTimes(1);
     expect(mockConnect).toHaveBeenCalledWith(
@@ -53,7 +53,7 @@ describe("MongoDbLayer", () => {
   it("should connect to MongoDB and close the connection manually", async () => {
     console.log("start the program...");
 
-    const result = await DatabaseTag.pipe(
+    const result = await MongoDbService.pipe(
       Runtime.runPromiseExit(await fromLayer(TestLayer))
     );
 

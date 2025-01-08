@@ -12,5 +12,6 @@
   "devDependencies": {
     "typescript": "^5.1.6",
     "vitest": "^1.2.2"
-  }
+  },
+  "packageManager": "pnpm@9.15.1"
 }

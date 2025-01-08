@@ -1,66 +1,59 @@
-import { Schema } from "@effect/schema";
-import { Config, Context, Effect, Layer } from "effect";
-import { Db, MongoClient, MongoClientOptions } from "mongodb";
+import { Config, Effect, Layer, Schema } from "effect";
+import { MongoClient, MongoClientOptions } from "mongodb";
 import { ObjectIdFromString } from "../schema";
 import { InstrumentStore } from "./abstract";
-
-export const DatabaseTag = Context.GenericTag<Db>("@effect-app/Database");
 
 export const mongoDbConnect = (
   mongodbUrl: string,
   options?: MongoClientOptions
 ) =>
-  Effect.gen(function* (_) {
-    yield* _(Effect.logInfo("Connecting to MongoDB"));
-    const client = yield* _(
-      Effect.tryPromise(() => MongoClient.connect(mongodbUrl, options))
+  Effect.gen(function* () {
+    yield* Effect.logInfo("Connecting to MongoDB");
+    const client = yield* Effect.tryPromise(() =>
+      MongoClient.connect(mongodbUrl, options)
     );
-    yield* _(Effect.logInfo("Connected to MongoDB"));
+    yield* Effect.logInfo("Connected to MongoDB");
     return client;
   });
 
 export const mongoDbClose = (force?: boolean) => (client: MongoClient) =>
-  Effect.gen(function* (_) {
-    yield* _(Effect.logInfo("Closing MongoDB connection"));
-    yield* _(Effect.promise(() => client.close(force)));
-    yield* _(Effect.logInfo("MongoDB connection closed"));
+  Effect.gen(function* () {
+    yield* Effect.logInfo("Closing MongoDB connection");
+    yield* Effect.promise(() => client.close(force));
+    yield* Effect.logInfo("MongoDB connection closed");
   });
 
 export const mongoDbImpl = (mongodbUrl: string, options?: MongoClientOptions) =>
   Effect.acquireRelease(
     mongoDbConnect(mongodbUrl, options),
     mongoDbClose()
-  ).pipe(Effect.andThen((client) => Effect.try(() => client.db())));
+  ).pipe(Effect.andThen((client) => client.db()));
 
-export const MongoDbLayer = Layer.scoped(
-  DatabaseTag,
-  Config.string("MONGODB_URL").pipe(Effect.andThen(mongoDbImpl))
-);
+export class MongoDbService extends Effect.Service<MongoDbService>()(
+  "app/MongoDbService",
+  {
+    scoped: Effect.gen(function* () {
+      const mongodbUrl = yield* Config.string("MONGODB_URL");
+      return yield* mongoDbImpl(mongodbUrl);
+    }),
+  }
+) {}
 
-const InstrumentStoreLayer = Layer.effect(
+export const MongoDbInstrumentStoreLive = Layer.effect(
   InstrumentStore,
-  Effect.gen(function* (_) {
-    const db = yield* _(DatabaseTag);
+  Effect.gen(function* () {
+    const db = yield* MongoDbService;
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
       Schema.decode(ObjectIdFromString)(id).pipe(
         Effect.andThen((_id) =>
-          Effect.tryPromise(() =>
-            db
-              .collection("instruments")
-              .findOneAndUpdate({ _id }, { $set: { quote } })
-          )
+          db
+            .collection("instruments")
+            .findOneAndUpdate({ _id }, { $set: { quote } })
         ),
-        Effect.asUnit
+        Effect.asVoid
       );
 
-    return InstrumentStore.of({
-      updateQuote,
-    });
+    return InstrumentStore.of({ updateQuote });
   })
-);
-
-export const MongoDbInstrumentStoreImpl = Layer.provide(
-  InstrumentStoreLayer,
-  MongoDbLayer
-);
+).pipe(Layer.provide(MongoDbService.Default));

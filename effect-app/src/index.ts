@@ -1,14 +1,14 @@
 import { makeLambda } from "@effect-aws/lambda";
 import { Layer } from "effect";
-import { SNSEventBusImpl } from "./bus";
+import { SNSEventBusLive } from "./bus";
 import { effectHandler } from "./lambda";
-import { YahooQuoteClientImpl } from "./quoteClient";
-import { MongoDbInstrumentStoreImpl } from "./store";
+import { YahooQuoteClientLive } from "./quoteClient";
+import { MongoDbInstrumentStoreLive } from "./store";
 
 const LambdaLive = Layer.mergeAll(
-  SNSEventBusImpl,
-  YahooQuoteClientImpl,
-  MongoDbInstrumentStoreImpl
+  SNSEventBusLive,
+  YahooQuoteClientLive,
+  MongoDbInstrumentStoreLive
 );
 
 module.exports.handler = makeLambda(effectHandler, LambdaLive);

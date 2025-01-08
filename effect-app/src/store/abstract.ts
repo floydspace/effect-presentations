@@ -1,13 +1,12 @@
-import { ParseResult, Schema } from "@effect/schema";
-import { Cause, Context, Effect } from "effect";
+import { Cause, Context, Effect, ParseResult, Schema } from "effect";
 
-export class Quote extends Schema.Class<Quote>()({
-  timestamp: Schema.number,
-  close: Schema.number,
-  high: Schema.number,
-  low: Schema.number,
-  open: Schema.number,
-  volume: Schema.number,
+export class Quote extends Schema.Class<Quote>("Quote")({
+  timestamp: Schema.Number,
+  close: Schema.Number,
+  high: Schema.Number,
+  low: Schema.Number,
+  open: Schema.Number,
+  volume: Schema.Number,
 }) {}
 
 export interface InstrumentStore {

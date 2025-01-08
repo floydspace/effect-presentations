@@ -1,15 +1,12 @@
-import {
-  DefaultDynamoDBDocumentServiceLayer,
-  DynamoDBDocumentService,
-} from "@effect-aws/lib-dynamodb";
+import { DynamoDBDocumentService } from "@effect-aws/lib-dynamodb";
 import { Cause, Config, Effect, Layer } from "effect";
 import { InstrumentStore } from "./abstract";
 
-const InstrumentStoreLayer = Layer.effect(
+export const DynamoDbInstrumentStoreLive = Layer.effect(
   InstrumentStore,
-  Effect.gen(function* (_) {
-    const TableName = yield* _(Config.string("INSTRUMENTS_TABLE_NAME"));
-    const db = yield* _(DynamoDBDocumentService);
+  Effect.gen(function* () {
+    const TableName = yield* Config.string("INSTRUMENTS_TABLE_NAME");
+    const db = yield* DynamoDBDocumentService;
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
       db
@@ -22,16 +19,9 @@ const InstrumentStoreLayer = Layer.effect(
         })
         .pipe(
           Effect.catchAll((e) => new Cause.UnknownException(e)),
-          Effect.asUnit
+          Effect.asVoid
         );
 
-    return InstrumentStore.of({
-      updateQuote,
-    });
+    return InstrumentStore.of({ updateQuote });
   })
-);
-
-export const DynamoDbInstrumentStoreImpl = Layer.provide(
-  InstrumentStoreLayer,
-  DefaultDynamoDBDocumentServiceLayer
-);
+).pipe(Layer.provide(DynamoDBDocumentService.defaultLayer));

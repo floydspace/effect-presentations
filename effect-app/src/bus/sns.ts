@@ -1,12 +1,12 @@
-import { DefaultSNSServiceLayer, SNSService } from "@effect-aws/client-sns";
+import { SNSService } from "@effect-aws/client-sns";
 import { Cause, Config, Effect, Layer } from "effect";
 import { EventBus } from "./abstract";
 
-const EventBusLayer = Layer.effect(
+export const SNSEventBusLive = Layer.effect(
   EventBus,
-  Effect.gen(function* (_) {
-    const domainTopicArn = yield* _(Config.string("DOMAIN_TOPIC_ARN"));
-    const sns = yield* _(SNSService);
+  Effect.gen(function* () {
+    const domainTopicArn = yield* Config.string("DOMAIN_TOPIC_ARN");
+    const sns = yield* SNSService;
 
     const sendMessage = <T>(
       exchangeType: string,
@@ -26,7 +26,7 @@ const EventBusLayer = Layer.effect(
         })
         .pipe(
           Effect.catchAll((e) => new Cause.UnknownException(e)),
-          Effect.asUnit
+          Effect.asVoid
         );
 
     return EventBus.of({
@@ -34,9 +34,4 @@ const EventBusLayer = Layer.effect(
         sendMessage("fanout", from, "subscriber", payload),
     });
   })
-);
-
-export const SNSEventBusImpl = Layer.provide(
-  EventBusLayer,
-  DefaultSNSServiceLayer
-);
+).pipe(Layer.provide(SNSService.defaultLayer));

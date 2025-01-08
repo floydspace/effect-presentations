@@ -1,35 +1,30 @@
-import { Arbitrary } from "@effect/schema";
 import { Arg, Substitute } from "@fluffy-spoon/substitute";
 import { Context, SNSEvent, SNSEventRecord } from "aws-lambda";
-import { Effect, Exit, Layer } from "effect";
-import * as fc from "fast-check";
+import { Arbitrary, Effect, Exit, FastCheck, Layer } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { EventBus } from "../src/bus";
 import { effectHandler } from "../src/lambda";
 import { QuoteClient } from "../src/quoteClient";
 import { InstrumentStore, Quote } from "../src/store";
 
-const QuoteArbitrary = Arbitrary.make(Quote)(fc);
+const QuoteArbitrary = Arbitrary.make(Quote);
+
+const symbol = "NN.AS";
+const event: SNSEvent = {
+  Records: [{ Sns: { Message: JSON.stringify({ symbol }) } } as SNSEventRecord],
+};
 
 describe("effectHandler", () => {
   it("should handle the event", async () => {
-    const symbol = "NN.AS";
-    const event: SNSEvent = {
-      Records: [
-        {
-          Sns: { Message: JSON.stringify({ symbol }) },
-        } as SNSEventRecord,
-      ],
-    };
-    const quoteSample = fc.sample(QuoteArbitrary, 1)[0];
+    const quoteSample = FastCheck.sample(QuoteArbitrary, 1)[0];
 
     const EventBusSub = Substitute.for<EventBus>();
     const QuoteClientSub = Substitute.for<QuoteClient>();
     const InstrumentStoreSub = Substitute.for<InstrumentStore>();
 
-    EventBusSub.publish(Arg.all()).returns(Effect.unit);
+    EventBusSub.publish(Arg.all()).returns(Effect.void);
     QuoteClientSub.lastPrice(Arg.all()).returns(Effect.succeed(quoteSample));
-    InstrumentStoreSub.updateQuote(Arg.all()).returns(Effect.unit);
+    InstrumentStoreSub.updateQuote(Arg.all()).returns(Effect.void);
 
     const MockLambdaLive = Layer.mergeAll(
       Layer.succeed(EventBus, EventBusSub),
@@ -52,18 +47,9 @@ describe("effectHandler", () => {
   });
 
   it("should fail if no quote found", async () => {
-    const symbol = "NN.AS";
-    const event: SNSEvent = {
-      Records: [
-        {
-          Sns: { Message: JSON.stringify({ symbol }) },
-        } as SNSEventRecord,
-      ],
-    };
-
-    const mockPublish = vi.fn(() => Effect.unit);
+    const mockPublish = vi.fn(() => Effect.void);
     const mockLastPrice = vi.fn(() => Effect.succeed(null));
-    const mockUpdateQuote = vi.fn(() => Effect.unit);
+    const mockUpdateQuote = vi.fn(() => Effect.void);
 
     const MockLambdaLive = Layer.mergeAll(
       Layer.succeed(EventBus, { publish: mockPublish }),

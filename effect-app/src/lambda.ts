@@ -1,7 +1,6 @@
 import { EffectHandler } from "@effect-aws/lambda";
-import { Schema } from "@effect/schema";
 import type { SNSEvent } from "aws-lambda";
-import { Console, Effect } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { EventBus } from "./bus";
 import { QuoteClient } from "./quoteClient";
 import { InstrumentStore } from "./store";
@@ -10,26 +9,26 @@ export const effectHandler: EffectHandler<
   SNSEvent,
   EventBus | QuoteClient | InstrumentStore
 > = (event) =>
-  Effect.gen(function* (_) {
-    yield* _(Console.log(`Received event: `, event));
+  Effect.gen(function* () {
+    yield* Console.log(`Received event: `, event);
 
     const decodeMessage = Schema.decode(
-      Schema.parseJson(Schema.struct({ symbol: Schema.string }))
+      Schema.parseJson(Schema.Struct({ symbol: Schema.String }))
     );
-    const { symbol } = yield* _(decodeMessage(event.Records[0].Sns.Message));
+    const { symbol } = yield* decodeMessage(event.Records[0].Sns.Message);
 
-    const bus = yield* _(EventBus);
-    const client = yield* _(QuoteClient);
-    const store = yield* _(InstrumentStore);
+    const bus = yield* EventBus;
+    const client = yield* QuoteClient;
+    const store = yield* InstrumentStore;
 
-    const quote = yield* _(client.lastPrice(symbol));
+    const quote = yield* client.lastPrice(symbol);
 
     if (!quote) {
-      return yield* _(Console.error("No quote found"));
+      return yield* Console.error("No quote found");
     }
 
-    yield* _(store.updateQuote(symbol, quote));
-    yield* _(bus.publish("quote_updated", { symbol, quote }));
+    yield* store.updateQuote(symbol, quote);
+    yield* bus.publish("quote_updated", { symbol, quote });
 
-    yield* _(Console.log(`Successfully processed event`));
+    yield* Console.log(`Successfully processed event`);
   }).pipe(Effect.orDie);
