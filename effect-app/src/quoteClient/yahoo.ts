@@ -29,8 +29,8 @@ export const YahooQuoteClientLive = Layer.effect(
         client.get(`/finance/chart/${symbol}`, {
           urlParams: { interval: "1d" },
         }),
-        Effect.scoped,
         Effect.andThen(HttpClientResponse.schemaBodyJson(YahooResponse)),
+        Effect.scoped,
         Effect.catchTags({ ParseError: () => Effect.succeed(null) }),
         Effect.catchAll(
           (e) =>

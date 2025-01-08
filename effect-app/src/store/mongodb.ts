@@ -1,6 +1,6 @@
+import "aws4"; // This is needed for connecting to MongoDB with MONGODB-AWS auth mechanism
 import { Config, Effect, Layer, Schema } from "effect";
 import { MongoClient, MongoClientOptions } from "mongodb";
-import { ObjectIdFromString } from "../schema";
 import { InstrumentStore } from "./abstract";
 
 export const mongoDbConnect = (
@@ -45,11 +45,11 @@ export const MongoDbInstrumentStoreLive = Layer.effect(
     const db = yield* MongoDbService;
 
     const updateQuote: InstrumentStore["updateQuote"] = (id, quote) =>
-      Schema.decode(ObjectIdFromString)(id).pipe(
+      Schema.decode(Schema.String)(id).pipe(
         Effect.andThen((_id) =>
           db
-            .collection("instruments")
-            .findOneAndUpdate({ _id }, { $set: { quote } })
+            .collection<{ _id: string }>("instruments")
+            .updateOne({ _id }, { $set: { quote } }, { upsert: true })
         ),
         Effect.asVoid
       );

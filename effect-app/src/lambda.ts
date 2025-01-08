@@ -1,6 +1,6 @@
 import { EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
-import { Console, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { EventBus } from "./bus";
 import { QuoteClient } from "./quoteClient";
 import { InstrumentStore } from "./store";
@@ -10,7 +10,7 @@ export const effectHandler: EffectHandler<
   EventBus | QuoteClient | InstrumentStore
 > = (event) =>
   Effect.gen(function* () {
-    yield* Console.log(`Received event: `, event);
+    yield* Effect.logInfo(`Received event: `, event);
 
     const decodeMessage = Schema.decode(
       Schema.parseJson(Schema.Struct({ symbol: Schema.String }))
@@ -24,11 +24,11 @@ export const effectHandler: EffectHandler<
     const quote = yield* client.lastPrice(symbol);
 
     if (!quote) {
-      return yield* Console.error("No quote found");
+      return yield* Effect.logError("No quote found");
     }
 
     yield* store.updateQuote(symbol, quote);
     yield* bus.publish("quote_updated", { symbol, quote });
 
-    yield* Console.log(`Successfully processed event`);
+    yield* Effect.logInfo(`Successfully processed event`);
   }).pipe(Effect.orDie);
