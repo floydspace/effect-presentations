@@ -11,9 +11,9 @@
   "license": "ISC",
   "sideEffects": [],
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.499.0",
-    "@aws-sdk/client-sns": "^3.499.0",
-    "@aws-sdk/util-dynamodb": "^3.499.0",
+    "@aws-sdk/client-dynamodb": "^3.724.0",
+    "@aws-sdk/client-sns": "^3.723.0",
+    "@aws-sdk/util-dynamodb": "^3.724.0",
     "@effect-aws/client-dynamodb": "^1.6.0",
     "@effect-aws/client-sns": "^1.5.0",
     "@effect-aws/lambda": "^1.2.0",
