@@ -73,7 +73,7 @@ It actually applies not only yo effect-aws, but to the effect itself, bc it prov
 
 ---
 <!-- .slide: data-auto-animate -->
-Overview
+Classic lambda example
 <!-- [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53] -->
 <pre data-id="code-animation"><code data-trim data-line-numbers="7-30|1,7-10|2,13-14|3-5,16-18|16,20-24|17,26|18,27|32|7-30">
 import type { Handler, SNSEvent } from "aws-lambda";
@@ -113,7 +113,7 @@ module.exports.handler = handler;
 
 ---
 <!-- .slide: data-auto-animate -->
-How **@effect-aws/lambda** works
+Effect lambda example
 
 <pre data-id="code-animation"><code data-trim data-line-numbers="8-35|1-2,8-13|3,16-19|4-6,21-23|21,25-29|22,31|23,32|43|37-41">
 import { EffectHandler, makeLambda } from "@effect-aws/lambda";
@@ -165,34 +165,92 @@ note:
 I want to start with **@effect-aws/lambda** package, bc it is a starting point of all the solutions
 
 ---
+<!-- .slide: data-auto-animate -->
+Lambda handler
 
-Lambda interface
-
-```ts
+<pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
 // Promise way
-type Handler<T = unknown, A = any> = (
-	event: T,
-	context: Context,
-) => Promise<A>
-
-// Callback way
-type Handler<T = unknown, A = any> = (
-	event: T,
-	context: Context,
-	callback: Callback<A>
-) => void
-```
-
-```ts
-// Effect way
-type EffectHandler<T, R, E = never, A = void> = (
+type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
-) => Effect.Effect<A, E, R>;
-```
-<!-- .element: class="fragment" -->
+) =&gt; Promise&lt;A&gt;;
+</code></pre>
+---
+<!-- .slide: data-auto-animate -->
+Effect Lambda handler
+
+<pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
+// Effect way
+type EffectHandler&lt;T, R, E = never, A = void&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Effect.Effect&lt;A, E, R&gt;;
+</code></pre>
 
 ---
+
+<!-- .slide: data-auto-animate -->
+Effect Lambda handler
+<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="7-19|8-9|11-13|21-40|22,39|16-17|29,36-37">
+// Effect way
+type EffectHandler&lt;T, R, E = never, A = void&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Effect.Effect&lt;A, E, R&gt;;
+
+function makeLambda&lt;T, R, E1, E2, A&gt;(
+  handler: EffectHandler&lt;T, R, E1, A&gt;,
+  globalLayer?: Layer.Layer&lt;R, E2&gt;,
+): Handler&lt;T, A&gt; {
+  const globalRuntime = globalLayer
+    ? fromLayer(globalLayer)
+    : Promise.resolve(Runtime.defaultRuntime as Runtime.Runtime&lt;R&gt;);
+
+  return async (event: T, context: Context) =&gt; {
+    const runPromise = Runtime.runPromise(await globalRuntime);
+    return handler(event, context).pipe(runPromise);
+  };
+}
+
+function fromLayer &lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
+  const rt = ManagedRuntime.make(layer);
+
+  const signalHandler: NodeJS.SignalsListener = (signal) =&gt; {
+    Effect.runFork(
+      Effect.gen(function* () {
+        yield* Console.log(`[runtime] ${signal} received`);
+        yield* Console.log("[runtime] cleaning up");
+        yield* rt.disposeEffect;
+        yield* Console.log("[runtime] exiting");
+        yield* Effect.sync(() =&gt; process.exit(0));
+      })
+    );
+  };
+
+  process.on("SIGTERM", signalHandler);
+  process.on("SIGINT", signalHandler);
+
+  return rt.runtime();
+}
+</code></pre>
+---
+
+Benefits of **@effect-aws/lambda**
+
+- Familiar interface provides clean implementation.
+- Type-safe lambda handler and dependencies.
+- Graceful shutdown from the box.
+- Portable.
+
+---
+
+Future of **effect-aws**
+
+- tracing
+- improve code generator
+
+---
+
 ## Q&A
 
 ---
@@ -200,3 +258,4 @@ type EffectHandler<T, R, E = never, A = void> = (
 Links
 
 - https://github.com/floydspace/effect-aws - Effectful AWS Github
+- https://floydspace.github.io/effect-aws - Effectful AWS Docs
