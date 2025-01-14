@@ -47,10 +47,12 @@ Who am I?
 - Ex- professional trader
 
     </grid>
-    <grid drag="30 140" drop="0 10">
+    <grid drag="30 150" drop="0 10">
 
 https://github.com/floydspace
 https://x.com/F1oydRose
+<img src="attachments/discord-logo.png" alt="My Image" style="box-shadow: none; border: none; width: 70px" />
+<img src="attachments/floyd-logo.png" alt="My Image" style="box-shadow: none; border: none; height: 70px" />
 </grid>
 
 ---
@@ -244,6 +246,101 @@ Benefits of **@effect-aws/lambda**
 
 ---
 
+Effectful AWS SDK clients
+
+---
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,3-11">
+import { SNS } from "@aws-sdk/client-sns";
+
+const handler = async () => {
+  const topicArn = process.env.TOPIC_ARN!;
+  const sns = new SNS();
+
+  await sns.publish({
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+};
+
+module.exports.handler = handler;
+</code></pre>
+
+---
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,5-13|7,9,12">
+import { SNS } from "@effect-aws/client-sns";
+import { makeLambda } from "@effect-aws/lambda";
+import { Config, Effect } from "effect";
+
+const handler = () => Effect.gen(function* () {
+  const topicArn = yield* Config.string("TOPIC_ARN");
+  const sns = yield* SNS;
+
+  yield* sns.publish({
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+}).pipe(Effect.provide(SNS.defaultLayer), Effect.orDie);
+
+module.exports.handler = makeLambda(handler);
+</code></pre>
+
+---
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="8,11|12">
+import { SNS } from "@effect-aws/client-sns";
+import { makeLambda } from "@effect-aws/lambda";
+import { Config, Effect } from "effect";
+
+const handler = () => Effect.gen(function* () {
+  const topicArn = yield* Config.string("TOPIC_ARN");
+
+  yield* SNS.publish({ // service accessor
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+}).pipe(Effect.provide(SNS.defaultLayer), Effect.orDie);
+
+module.exports.handler = makeLambda(handler);
+</code></pre>
+
+note:
+
+However as of Patrick explanation, the direct accessors should be used carefully, it could cause requirements leakage.
+---
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="12">
+import { SNS } from "@effect-aws/client-sns";
+import { makeLambda } from "@effect-aws/lambda";
+import { Config, Effect } from "effect";
+
+const handler = () => Effect.gen(function* () {
+  const topicArn = yield* Config.string("TOPIC_ARN");
+
+  yield* SNS.publish({ // service accessor
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+}).pipe(Effect.provide(SNS.layer({ region: "eu-central-1" })), Effect.orDie);
+
+module.exports.handler = makeLambda(handler);
+</code></pre>
+
+---
+
 Future of **effect-aws**
 
 - tracing
@@ -259,3 +356,9 @@ Links
 
 - https://github.com/floydspace/effect-aws - Effectful AWS Github
 - https://floydspace.github.io/effect-aws - Effectful AWS Docs
+
+Kudos
+
+- https://github.com/godu - Arthur Weber
+- **effect-aws** users
+- Effect Team
