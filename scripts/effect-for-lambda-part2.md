@@ -44,7 +44,7 @@ Who am I?
   - Author of [serverless-esbuild](https://github.com/floydspace/serverless-esbuild) plugin
   - Author of [effect-aws](https://github.com/floydspace/effect-aws)
 
-- Ex- professional trader
+- Ex- professional day-trader
 
     </grid>
     <grid drag="30 150" drop="0 10">
@@ -62,9 +62,9 @@ How many of you work with AWS?
 
 Motivation
 
-- Having something ready to use without spending much time reimplementing **scalable** and **efficient** solutions
-- Serverless supposed to be used for **quick start**, I wanted to keep the same energy when working with Effect
-- Make working with lambda function even more **type-safe**, to deal with less bugs in runtime.
+- Having universal ready to use **scalable** and **efficient** solution
+- Having a solution which is **easy to use**, as serverless is ment to be used for **quick start**
+- Make working with lambda function even more **type-safe**, to deal with **less bugs** in runtime.
 
 notes:
 I work a lot with lambda and started many serverless projects, so I collected some common patterns a logic which I prefer to use, and when I started working with Effect I noticed that doing he same job again and again, it is why I decided to extract common logic to a package.
@@ -237,12 +237,24 @@ function fromLayer &lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
 </code></pre>
 ---
 
+Graceful shutdown caveat
+
+<ul>
+  <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for a functions with <strong>registered extensions</strong></li>
+  <li class="fragment">Lambda environment lifecycle
+  <img src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;"></li>
+  <li class="fragment">The easiest way to enable it is using <strong>LambdaInsightsExtension</strong> lambda layer</li>
+</ul>
+
+---
+
 Benefits of **@effect-aws/lambda**
 
-- Familiar interface provides clean implementation.
-- Type-safe lambda handler and dependencies.
-- Graceful shutdown from the box.
-- Portable.
+- Familiar interface provides clean implementation. <!-- .element: class="fragment"  -->
+- Type-safe lambda handler and dependencies. <!-- .element: class="fragment"  -->
+- Shared effect runtime among invocations. <!-- .element: class="fragment"  -->
+- Graceful shutdown. <!-- .element: class="fragment"  -->
+- Portable, aka Effectful. <!-- .element: class="fragment"  -->
 
 ---
 
@@ -343,8 +355,16 @@ module.exports.handler = makeLambda(handler);
 
 Future of **effect-aws**
 
-- tracing
-- improve code generator
+
+<ul>
+  <li class="fragment">Improve code generator, and generate all clients</li>
+  <li class="fragment">Implement X-Ray tracing to support Effect spans</li>
+  <li class="fragment">Port <a href="https://docs.powertools.aws.dev/lambda/typescript/latest/">AWS Powertools for Lambda</a> to Effect</li>
+  <li class="fragment">Middlewares for <strong>@effect-aws/lambda</strong> (<a href="https://middy.js.org">Middy</a> inspiration)</li>
+  <li class="fragment">Http Api lambda builder</li>
+</ul>
+
+<iframe class="fragment" src="https://github.com/sponsors/floydspace/button" title="Sponsor floydspace" height="32" width="120" style="border: 0; border-radius: 6px; margin-top: 30px"></iframe>
 
 ---
 
@@ -352,13 +372,15 @@ Future of **effect-aws**
 
 ---
 
-Links
-
-- https://github.com/floydspace/effect-aws - Effectful AWS Github
-- https://floydspace.github.io/effect-aws - Effectful AWS Docs
-
 Kudos
 
 - https://github.com/godu - Arthur Weber
 - **effect-aws** users
 - Effect Team
+
+Links <!-- .element: class="fragment" data-fragment-index="1" -->
+
+<ul class="fragment" data-fragment-index="1">
+  <li><a href="https://github.com/floydspace/effect-aws">https://github.com/floydspace/effect-aws</a> - Effectful AWS Github</li>
+  <li><a href="https://floydspace.github.io/effect-aws">https://floydspace.github.io/effect-aws</a> - Effectful AWS Docs</li>
+</ul>
