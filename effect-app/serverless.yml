@@ -3,6 +3,7 @@ frameworkVersion: "3"
 
 plugins:
   - serverless-esbuild
+  - ./provided-runtime-plugin.js
 
 provider:
   name: aws
@@ -17,9 +18,9 @@ provider:
 
 custom:
   esbuild:
-    minify: true
+    minify: false
     metafile: true
-    exclude: ["@aws-sdk/*"]
+    exclude: []
     mainFields: ["module", "main"]
     alias:
       mongodb: mongodb/src
@@ -27,8 +28,9 @@ custom:
 
 functions:
   lambda:
-    handler: src/index.handler
+    handler: src/bun.fetch
     layers:
+      - arn:aws:lambda:eu-west-1:780689416838:layer:bun:1
       - arn:aws:lambda:eu-west-1:580247275435:layer:LambdaInsightsExtension:53 # Needed for graceful shutdown
     environment:
       MONGODB_URL: mongodb+srv://cluster0.tlkgc.mongodb.net/demo?retryWrites=true&w=majority&authSource=%24external&authMechanism=MONGODB-AWS

@@ -11,4 +11,4 @@ const LambdaLive = Layer.mergeAll(
   MongoDbInstrumentStoreLive
 ).pipe(Layer.provideMerge(Logger.structured));
 
-module.exports.handler = makeLambda(effectHandler, LambdaLive);
+export const handler = makeLambda(effectHandler, LambdaLive);
