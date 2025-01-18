@@ -12,8 +12,7 @@ provider:
     role:
       statements:
         - Effect: Allow
-          Action:
-            - "sns:Publish"
+          Action: sns:Publish
           Resource: !Ref DomainTopic
 
 custom:
@@ -23,7 +22,7 @@ custom:
     exclude: ["@aws-sdk/*"]
     mainFields: ["module", "main"]
     alias:
-      mongodb: "mongodb/src"
+      mongodb: mongodb/src
     packager: pnpm
 
 functions:

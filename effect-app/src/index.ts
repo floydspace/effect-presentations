@@ -9,6 +9,6 @@ const LambdaLive = Layer.mergeAll(
   SNSEventBusLive,
   YahooQuoteClientLive,
   MongoDbInstrumentStoreLive
-).pipe(Layer.provideMerge(Logger.json));
+).pipe(Layer.provideMerge(Logger.structured));
 
 module.exports.handler = makeLambda(effectHandler, LambdaLive);

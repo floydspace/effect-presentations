@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deploy": "serverless deploy"
+    "deploy": "serverless deploy",
+    "invoke": "sam remote invoke --stack-name demo-effect-app-dev --region eu-west-1 --event-file event.json",
+    "logs": "sam logs --stack-name demo-effect-app-dev --region eu-west-1",
+    "logs:watch": "logs --tail"
   },
   "keywords": [],
   "author": "",
