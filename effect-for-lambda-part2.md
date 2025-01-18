@@ -1,13 +1,12 @@
 ---
 theme: css/nn.css
 highlightTheme: css/github-dark-default.css
-# transition: concave
 ---
 
 <div style="text-align: center; flex-direction: row; display: flex; justify-content: center; align-items: center;">
-<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
-<img src="attachments/plus-sign.png" alt="My Image" style="box-shadow: none; border: none;" width=100/>
-<img src="attachments/aws-logo.png" alt="My Image" style="box-shadow: none; border: none;" width=400/>
+	<img src="attachments/effect-logo2.png" alt="My Image" style="filter: invert(1); border: none" />
+	<h1 style="font-size: 5em; font-weight: 400">+</h1>
+	<img src="attachments/aws-logo.png" alt="My Image" style="box-shadow: none; border: none;" width=400/>
 </div>
 
 # Effect
@@ -214,7 +213,7 @@ function makeLambda&lt;T, R, E1, E2, A&gt;(
   };
 }
 
-function fromLayer &lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
+function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
   const rt = ManagedRuntime.make(layer);
 
   const signalHandler: NodeJS.SignalsListener = (signal) =&gt; {
@@ -329,6 +328,7 @@ module.exports.handler = makeLambda(handler);
 note:
 
 However as of Patrick explanation, the direct accessors should be used carefully, it could cause requirements leakage.
+
 ---
 <!-- .slide: data-auto-animate -->
 
@@ -374,7 +374,9 @@ Future of **effect-aws**
 
 Kudos
 
-- https://github.com/godu - Arthur Weber
+- Contributors
+  - https://github.com/godu - Arthur Weber
+  - other contributors
 - **effect-aws** users
 - Effect Team
 
@@ -384,3 +386,10 @@ Links <!-- .element: class="fragment" data-fragment-index="1" -->
   <li><a href="https://github.com/floydspace/effect-aws">https://github.com/floydspace/effect-aws</a> - Effectful AWS Github</li>
   <li><a href="https://floydspace.github.io/effect-aws">https://floydspace.github.io/effect-aws</a> - Effectful AWS Docs</li>
 </ul>
+
+note:
+other contributors: 
+- Chris Balla - for contributing with new clients
+- Joep Joosten - for attempt of improving code generator and thinking along
+- Florian Bischoff - for sharing ideas and suggestions
+- Ryan McDaniel
