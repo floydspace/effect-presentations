@@ -1,4 +1,4 @@
-import { SNSService } from "@effect-aws/client-sns";
+import { SNS } from "@effect-aws/client-sns";
 import { Cause, Config, Effect, Layer } from "effect";
 import { EventBus } from "./abstract";
 
@@ -6,7 +6,7 @@ export const SNSEventBusLive = Layer.effect(
   EventBus,
   Effect.gen(function* () {
     const domainTopicArn = yield* Config.string("DOMAIN_TOPIC_ARN");
-    const sns = yield* SNSService;
+    const sns = yield* SNS;
 
     const sendMessage = <T>(
       exchangeType: string,
@@ -34,4 +34,4 @@ export const SNSEventBusLive = Layer.effect(
         sendMessage("fanout", from, "subscriber", payload),
     });
   })
-).pipe(Layer.provide(SNSService.defaultLayer));
+).pipe(Layer.provide(SNS.layer({ logger: true })));
