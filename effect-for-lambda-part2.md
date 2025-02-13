@@ -1,5 +1,5 @@
 ---
-theme: css/nn.css
+theme: assets/css/nn.css
 highlightTheme: css/github-dark-default.css
 ---
 
@@ -10,12 +10,14 @@ highlightTheme: css/github-dark-default.css
 </div>
 
 # Effect
+
 ## for AWS Lambda
 
 and other AWS services
 
 ---
-Agenda
+
+#### In this talk
 
 - Introduction and motivation
 - How does **@effect-aws/lambda** work
@@ -42,6 +44,7 @@ Who am I?
 
   - Author of [serverless-esbuild](https://github.com/floydspace/serverless-esbuild) plugin
   - Author of [effect-aws](https://github.com/floydspace/effect-aws)
+  - Author of [effect-kafka](https://github.com/floydspace/effect-kafka)
 
 - Ex- professional day-trader
 
@@ -55,11 +58,12 @@ https://x.com/F1oydRose
 </grid>
 
 ---
-How many of you work with AWS?
+
+#### How many of you work with AWS?
 
 ---
 
-Motivation
+#### Motivation
 
 - Having universal ready to use **scalable** and **efficient** solution
 - Having a solution which is **easy to use**, as serverless is ment to be used for **quick start**
@@ -70,11 +74,14 @@ I work a lot with lambda and started many serverless projects, so I collected so
 
 Serverless development lifecycle is sometimes more complex, you have to deploy to the cloud to see actual behaviour one or another aws service, with type safety not only on input and result, but also on error level helps to reduce repetition of deployment and testing in runtime.
 
-It actually applies not only yo effect-aws, but to the effect itself, bc it provides a lot of helpful functions to make your code better without overthinking a spending too much time, Effect team does it for you. 
+It actually applies not only yo effect-aws, but to the effect itself, bc it provides a lot of helpful functions to make your code better without overthinking a spending too much time, Effect team does it for you.
 
 ---
+
 <!-- .slide: data-auto-animate -->
+
 Classic lambda example
+
 <!-- [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53] -->
 <pre data-id="code-animation"><code data-trim data-line-numbers="7-30|1,7-10|2,13-14|3-5,16-18|16,20-24|17,26|18,27|32|7-30">
 import type { Handler, SNSEvent } from "aws-lambda";
@@ -113,7 +120,9 @@ module.exports.handler = handler;
 </code></pre>
 
 ---
+
 <!-- .slide: data-auto-animate -->
+
 Effect lambda example
 
 <pre data-id="code-animation"><code data-trim data-line-numbers="8-35|1-2,8-13|3,16-19|4-6,21-23|21,25-29|22,31|23,32|43|37-41">
@@ -166,7 +175,9 @@ note:
 I want to start with **@effect-aws/lambda** package, bc it is a starting point of all the solutions
 
 ---
+
 <!-- .slide: data-auto-animate -->
+
 Lambda handler
 
 <pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
@@ -176,8 +187,11 @@ type Handler&lt;T = unknown, A = any&gt; = (
   context: Context,
 ) =&gt; Promise&lt;A&gt;;
 </code></pre>
+
 ---
+
 <!-- .slide: data-auto-animate -->
+
 Effect Lambda handler
 
 <pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
@@ -191,7 +205,9 @@ type EffectHandler&lt;T, R, E = never, A = void&gt; = (
 ---
 
 <!-- .slide: data-auto-animate -->
+
 Effect Lambda handler
+
 <pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="7-19|8-9|11-13|21-40|22,39|16-17|29,36-37">
 // Effect way
 type EffectHandler&lt;T, R, E = never, A = void&gt; = (
@@ -234,6 +250,7 @@ function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
   return rt.runtime();
 }
 </code></pre>
+
 ---
 
 Graceful shutdown caveat
@@ -260,11 +277,12 @@ Benefits of **@effect-aws/lambda**
 Effectful AWS SDK clients
 
 ---
+
 <!-- .slide: data-auto-animate -->
 
 SNS client example
 
-<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,3-11">
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,4-10">
 import { SNS } from "@aws-sdk/client-sns";
 
 const handler = async () => {
@@ -281,11 +299,12 @@ module.exports.handler = handler;
 </code></pre>
 
 ---
+
 <!-- .slide: data-auto-animate -->
 
 SNS client example
 
-<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,5-13|7,9,12">
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="1,6-12|7,9,12">
 import { SNS } from "@effect-aws/client-sns";
 import { makeLambda } from "@effect-aws/lambda";
 import { Config, Effect } from "effect";
@@ -298,17 +317,21 @@ const handler = () => Effect.gen(function* () {
     TopicArn: topicArn,
     Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
   });
-}).pipe(Effect.provide(SNS.defaultLayer), Effect.orDie);
+}).pipe(
+  Effect.provide(SNS.defaultLayer),
+  Effect.orDie
+);
 
 module.exports.handler = makeLambda(handler);
 </code></pre>
 
 ---
+
 <!-- .slide: data-auto-animate -->
 
 SNS client example
 
-<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="8,11|12">
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="8,11|13">
 import { SNS } from "@effect-aws/client-sns";
 import { makeLambda } from "@effect-aws/lambda";
 import { Config, Effect } from "effect";
@@ -320,7 +343,10 @@ const handler = () => Effect.gen(function* () {
     TopicArn: topicArn,
     Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
   });
-}).pipe(Effect.provide(SNS.defaultLayer), Effect.orDie);
+}).pipe(
+  Effect.provide(SNS.defaultLayer),
+  Effect.orDie
+);
 
 module.exports.handler = makeLambda(handler);
 </code></pre>
@@ -330,11 +356,12 @@ note:
 However as of Patrick explanation, the direct accessors should be used carefully, it could cause requirements leakage.
 
 ---
+
 <!-- .slide: data-auto-animate -->
 
 SNS client example
 
-<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="12">
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="13">
 import { SNS } from "@effect-aws/client-sns";
 import { makeLambda } from "@effect-aws/lambda";
 import { Config, Effect } from "effect";
@@ -346,7 +373,36 @@ const handler = () => Effect.gen(function* () {
     TopicArn: topicArn,
     Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
   });
-}).pipe(Effect.provide(SNS.layer({ region: "eu-central-1" })), Effect.orDie);
+}).pipe(
+  Effect.provide(SNS.layer({ region: "eu-central-1" })),
+  Effect.orDie
+);
+
+module.exports.handler = makeLambda(handler);
+</code></pre>
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="13">
+import { SNS } from "@effect-aws/client-sns";
+import { makeLambda } from "@effect-aws/lambda";
+import { Config, Effect } from "effect";
+
+const handler = () => Effect.gen(function* () {
+  const topicArn = yield* Config.string("TOPIC_ARN");
+
+  yield* SNS.publish({ // service accessor
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+}).pipe(
+  Effect.provide(SNS.baseLayer(() => new SNSClient({ region: "eu-central-1" }))),
+  Effect.orDie
+);
 
 module.exports.handler = makeLambda(handler);
 </code></pre>
@@ -354,7 +410,6 @@ module.exports.handler = makeLambda(handler);
 ---
 
 Future of **effect-aws**
-
 
 <ul>
   <li class="fragment">Improve code generator, and generate all clients</li>
@@ -372,7 +427,7 @@ Future of **effect-aws**
 
 ---
 
-Kudos
+#### Kudos
 
 - Contributors
   - https://github.com/godu - Arthur Weber
@@ -380,7 +435,7 @@ Kudos
 - **effect-aws** users
 - Effect Team
 
-Links <!-- .element: class="fragment" data-fragment-index="1" -->
+#### Links <!-- .element: class="fragment" data-fragment-index="1" -->
 
 <ul class="fragment" data-fragment-index="1">
   <li><a href="https://github.com/floydspace/effect-aws">https://github.com/floydspace/effect-aws</a> - Effectful AWS Github</li>
@@ -388,7 +443,8 @@ Links <!-- .element: class="fragment" data-fragment-index="1" -->
 </ul>
 
 note:
-other contributors: 
+other contributors:
+
 - Chris Balla - for contributing with new clients
 - Joep Joosten - for attempt of improving code generator and thinking along
 - Florian Bischoff - for sharing ideas and suggestions
