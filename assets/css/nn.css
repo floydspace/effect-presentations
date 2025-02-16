@@ -105,7 +105,7 @@ body {
 }
 
 .reveal {
-  height: calc(100% - 92px);
+  /* height: calc(100% - 92px); */
   font-family: "Calibri", serif;
   font-size: 32px;
   font-weight: normal;

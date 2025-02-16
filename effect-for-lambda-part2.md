@@ -9,9 +9,7 @@ highlightTheme: css/github-dark-default.css
 	<img src="attachments/aws-logo.png" alt="My Image" style="box-shadow: none; border: none;" width=400/>
 </div>
 
-# Effect
-
-## for AWS Lambda
+# Effect for AWS Lambda
 
 and other AWS services
 
@@ -26,15 +24,17 @@ and other AWS services
 
 ---
 
-<!-- <grid drag="70 0" drop="20 10">
-</grid> -->
-<grid drag="30 70" drop="0 10">
+<grid drag="30 100" drop="left">
 Who am I?
 <div style="text-align: right"><B>Victor Korzunin</B></div>
-<img src="https://avatars.githubusercontent.com/u/5180700" alt="My Image" style="border: none; width: 200px" />
-</grid>
-<grid drag="100 45" drop="25 30">
+![Image|200](https://avatars.githubusercontent.com/u/5180700)
 
+https://github.com/floydspace
+https://x.com/F1oydRose
+<img src="attachments/discord-logo.png" alt="My Image" style="box-shadow: none; border: none; width: 70px" />
+<img src="attachments/floyd-logo.png" alt="My Image" style="box-shadow: none; border: none; height: 70px" />
+</grid>
+<grid drag="65 100" drop="right">
 - Software Engineer, 9+ years of experience
 
   - 8+ years with TypeScript
@@ -42,32 +42,26 @@ Who am I?
 
 - Open-Source Contributor
 
-  - Author of [serverless-esbuild](https://github.com/floydspace/serverless-esbuild) plugin
   - Author of [effect-aws](https://github.com/floydspace/effect-aws)
   - Author of [effect-kafka](https://github.com/floydspace/effect-kafka)
+  - Author of [serverless-esbuild](https://github.com/floydspace/serverless-esbuild) plugin
 
 - Ex- professional day-trader
-
-    </grid>
-    <grid drag="30 150" drop="0 10">
-
-https://github.com/floydspace
-https://x.com/F1oydRose
-<img src="attachments/discord-logo.png" alt="My Image" style="box-shadow: none; border: none; width: 70px" />
-<img src="attachments/floyd-logo.png" alt="My Image" style="box-shadow: none; border: none; height: 70px" />
 </grid>
 
 ---
-
+<!-- slide bg="[[icebreaker.jpg]]" data-background-opacity="0.5" -->
 #### How many of you work with AWS?
 
 ---
+<!-- slide bg="[[motivation.jpg]]" data-background-opacity="0.8" data-background-size="50% 100%" data-background-position="right center" -->
 
+<grid drag="60 100" drop="-50 0">
 #### Motivation
 
-- Having universal ready to use **scalable** and **efficient** solution
-- Having a solution which is **easy to use**, as serverless is ment to be used for **quick start**
-- Make working with lambda function even more **type-safe**, to deal with **less bugs** in runtime.
+- Having the **common implementation**, to not repeat myself when working with AWS lambda and Effect
+- Having the **seamless migration** experience from classic AWS Lambda implementation to the Effectful one.
+</grid>
 
 notes:
 I work a lot with lambda and started many serverless projects, so I collected some common patterns a logic which I prefer to use, and when I started working with Effect I noticed that doing he same job again and again, it is why I decided to extract common logic to a package.
@@ -83,9 +77,8 @@ It actually applies not only yo effect-aws, but to the effect itself, bc it prov
 Classic lambda example
 
 <!-- [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53] -->
-<pre data-id="code-animation"><code data-trim data-line-numbers="7-30|1,7-10|2,13-14|3-5,16-18|16,20-24|17,26|18,27|32|7-30">
+<pre data-id="code-animation"><code data-trim data-line-numbers="6-28|1,6-9|12|2-4,14-16|14,18-22|15,24|16,25|30|6-28">
 import type { Handler, SNSEvent } from "aws-lambda";
-import { z } from "zod";
 import { SNSEventBus } from "./bus";
 import { YahooQuoteClient } from "./quoteClient";
 import { MongoDbInstrumentStore } from "./store";
@@ -96,8 +89,7 @@ export const handler: Handler&lt;
 &gt; = async (event) => {
   console.info(`Received event: `, event);
 
-  const message = JSON.parse(event.Records[0].Sns.Message);
-  const { symbol } = z.object({ symbol: z.string() }).parse(message);
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
 
   const client = new YahooQuoteClient();
   const store = await MongoDbInstrumentStore.init();
@@ -125,10 +117,10 @@ module.exports.handler = handler;
 
 Effect lambda example
 
-<pre data-id="code-animation"><code data-trim data-line-numbers="8-35|1-2,8-13|3,16-19|4-6,21-23|21,25-29|22,31|23,32|43|37-41">
+<pre data-id="code-animation"><code data-trim data-line-numbers="8-32|1-2,8-13|16|4-6,18-20|18,22-26|19,28|20,29|40|34-38">
 import { EffectHandler, makeLambda } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
-import { Effect, Layer, Logger, Schema } from "effect";
+import { Console, Effect, Layer, Logger } from "effect";
 import { EventBus, SNSEventBusLive } from "./bus";
 import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
 import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
@@ -139,12 +131,9 @@ export const effectHandler: EffectHandler&lt;
   never,
   void
 &gt; = (event) => Effect.gen(function* () {
-  yield* Effect.logInfo(`Received event: `, event);
+  yield* Console.info(`Received event: `, event);
 
-  const decodeMessage = Schema.decode(
-    Schema.parseJson(Schema.Struct({ symbol: Schema.String }))
-  );
-  const { symbol } = yield* decodeMessage(event.Records[0].Sns.Message);
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
 
   const client = yield* QuoteClient;
   const store = yield* InstrumentStore;
@@ -153,13 +142,13 @@ export const effectHandler: EffectHandler&lt;
   const quote = yield* client.lastPrice(symbol);
 
   if (!quote) {
-    return yield* Effect.logError("No quote found");
+    return yield* Console.error("No quote found");
   }
 
   yield* store.updateQuote(symbol, quote);
   yield* bus.publish("quote_updated", { symbol, quote });
 
-  yield* Effect.logInfo(`Successfully processed event`);
+  yield* Console.info(`Successfully processed event`);
 }).pipe(Effect.orDie);
 
 const LambdaLive = Layer.mergeAll(
@@ -180,7 +169,31 @@ I want to start with **@effect-aws/lambda** package, bc it is a starting point o
 
 Lambda handler
 
-<pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void;
+</code></pre>
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Lambda handler
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void;
+</code></pre>
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
 // Promise way
 type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
@@ -192,9 +205,27 @@ type Handler&lt;T = unknown, A = any&gt; = (
 
 <!-- .slide: data-auto-animate -->
 
-Effect Lambda handler
+Lambda handler
 
-<pre data-id="code-animation2"><code data-trim data-line-numbers="1-5">
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void;
+</code></pre>
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Promise way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Promise&lt;A&gt;;
+</code></pre>
+
+Effect Lambda handler
+<pre data-id="code-animation2"><code data-trim class="language-ts">
 // Effect way
 type EffectHandler&lt;T, R, E = never, A = void&gt; = (
   event: T,
@@ -261,6 +292,8 @@ Graceful shutdown caveat
   <img src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;"></li>
   <li class="fragment">The easiest way to enable it is using <strong>LambdaInsightsExtension</strong> lambda layer</li>
 </ul>
+
+<div class="fragment" style="margin-top: 50px">DEMO</div>
 
 ---
 
@@ -409,17 +442,56 @@ module.exports.handler = makeLambda(handler);
 
 ---
 
+<!-- .slide: data-auto-animate -->
+
+SNS client example
+
+<pre data-id="code-animation3"><code class="language-typescript" data-trim data-line-numbers="8">
+import { SNS } from "@effect-aws/client-sns";
+import { makeLambda } from "@effect-aws/lambda";
+import { Config, Effect } from "effect";
+
+const handler = () => Effect.gen(function* () {
+  const topicArn = yield* Config.string("TOPIC_ARN");
+
+  yield* SNS.publish({ // service accessor
+    TopicArn: topicArn,
+    Message: JSON.stringify({ symbol: "NN.AS", price: 42 }),
+  });
+}).pipe(
+  Effect.provide(SNS.baseLayer(() => new SNSClient({ region: "eu-central-1" }))),
+  Effect.orDie
+);
+
+module.exports.handler = makeLambda(handler);
+</code></pre>
+
+<img src="attachments/Screenshot 2025-02-16 at 19.19.32.png" style="position: absolute; top: 195px; left: 225px">
+
+---
+
 Future of **effect-aws**
 
 <ul>
-  <li class="fragment">Improve code generator, and generate all clients</li>
+  <li class="fragment">Generate all clients</li>
   <li class="fragment">Implement X-Ray tracing to support Effect spans</li>
   <li class="fragment">Port <a href="https://docs.powertools.aws.dev/lambda/typescript/latest/">AWS Powertools for Lambda</a> to Effect</li>
   <li class="fragment">Middlewares for <strong>@effect-aws/lambda</strong> (<a href="https://middy.js.org">Middy</a> inspiration)</li>
   <li class="fragment">Http Api lambda builder</li>
 </ul>
+<div class="fragment" style="display: flex; margin-top: 50px">
+<iframe src="https://ghbtns.com/github-btn.html?user=floydspace&repo=effect-aws&type=star&count=true&size=large" frameborder="0" scrolling="0" width="150" height="30" title="GitHub"></iframe>
 
-<iframe class="fragment" src="https://github.com/sponsors/floydspace/button" title="Sponsor floydspace" height="32" width="120" style="border: 0; border-radius: 6px; margin-top: 30px"></iframe>
+<iframe src="https://ghbtns.com/github-btn.html?user=floydspace&repo=effect-aws&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="140" height="30" title="GitHub"></iframe>
+
+<iframe src="https://ghbtns.com/github-btn.html?user=floydspace&type=follow&count=true&size=large" frameborder="0" scrolling="0" width="280" height="30" title="GitHub"></iframe>
+
+<iframe src="https://ghbtns.com/github-btn.html?user=floydspace&type=sponsor&size=large" frameborder="0" scrolling="0" width="215" height="30" title="GitHub"></iframe>
+</div>
+%% <iframe class="fragment" src="https://github.com/sponsors/floydspace/button" title="Sponsor floydspace" height="32" width="120" style="border: 0; border-radius: 6px; margin-top: 30px"></iframe> %%
+
+
+
 
 ---
 
@@ -443,9 +515,27 @@ Future of **effect-aws**
 </ul>
 
 note:
+
 other contributors:
 
 - Chris Balla - for contributing with new clients
 - Joep Joosten - for attempt of improving code generator and thinking along
 - Florian Bischoff - for sharing ideas and suggestions
 - Ryan McDaniel
+
+
+I wouldn't be here if you would not use it.
+
+---
+
+<grid drag="50 100" drop="left">
+# Thank you!
+</grid>
+<grid drag="50 100" drop="right">
+![[website-qr.png|300]] <!-- .element: style="box-shadow: none; border: none;" -->
+<div style="display: flex; flex-direction: column; align-items: flex-start;">
+<div><img src="attachments/x-logo.svg" width="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/F1oydRose</span></div>
+<div><img src="attachments/github-mark.svg" width="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/floydspace</span></div>
+<div><img src="attachments/discord-logo.svg" width="30" height="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/victor.korzunin</span></div>
+</div>
+</grid>
