@@ -28,11 +28,11 @@ and other AWS services
 Who am I?
 <div style="text-align: right"><B>Victor Korzunin</B></div>
 ![Image|200](https://avatars.githubusercontent.com/u/5180700)
-
-https://github.com/floydspace
-https://x.com/F1oydRose
-<img src="attachments/discord-logo.png" alt="My Image" style="box-shadow: none; border: none; width: 70px" />
-<img src="attachments/floyd-logo.png" alt="My Image" style="box-shadow: none; border: none; height: 70px" />
+<div style="display: flex; flex-direction: column; align-items: flex-start;">
+<div><img src="attachments/x-logo.svg" width="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/F1oydRose</span></div>
+<div><img src="attachments/github-mark.svg" width="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/floydspace</span></div>
+<div><img src="attachments/discord-logo.svg" width="30" height="30" style="box-shadow: none; border: none; vertical-align: middle; margin-right: 20px;"> <span>/victor.korzunin</span></div>
+</div>
 </grid>
 <grid drag="65 100" drop="right">
 - Software Engineer, 9+ years of experience
@@ -49,9 +49,16 @@ https://x.com/F1oydRose
 - Ex- professional day-trader
 </grid>
 
+notes:
+- based in rotterdam
+- english, presenter, bare with me
+
 ---
 <!-- slide bg="[[icebreaker.jpg]]" data-background-opacity="0.5" -->
 #### How many of you work with AWS?
+
+notes:
+- how important it is
 
 ---
 <!-- slide bg="[[motivation.jpg]]" data-background-opacity="0.8" data-background-size="50% 100%" data-background-position="right center" -->
@@ -110,6 +117,8 @@ export const handler: Handler&lt;
 module.exports.handler = handler;
 
 </code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
 
 ---
 
@@ -161,7 +170,9 @@ module.exports.handler = makeLambda(effectHandler, LambdaLive);
 </code></pre>
 
 note:
-I want to start with **@effect-aws/lambda** package, bc it is a starting point of all the solutions
+- makeLambda adapter
+- optional global layer
+- local layer can be used
 
 ---
 
@@ -232,6 +243,8 @@ type EffectHandler&lt;T, R, E = never, A = void&gt; = (
   context: Context,
 ) =&gt; Effect.Effect&lt;A, E, R&gt;;
 </code></pre>
+notes:
+- I wish AWS natively work with Effect type
 
 ---
 
@@ -281,19 +294,29 @@ function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
   return rt.runtime();
 }
 </code></pre>
+notes:
+- convert global layer to global runtime
+- run handler within global runtime
+- listen to shutdown signals  to dispose
 
 ---
 
 Graceful shutdown caveat
 
 <ul>
-  <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for a functions with <strong>registered extensions</strong></li>
+  <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong></li>
   <li class="fragment">Lambda environment lifecycle
   <img src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;"></li>
   <li class="fragment">The easiest way to enable it is using <strong>LambdaInsightsExtension</strong> lambda layer</li>
 </ul>
 
 <div class="fragment" style="margin-top: 50px">DEMO</div>
+
+notes:
+- lambda hit from outside
+- runtime constructed within INIT phase
+- only extension emits signals
+- demo
 
 ---
 
@@ -385,8 +408,7 @@ module.exports.handler = makeLambda(handler);
 </code></pre>
 
 note:
-
-However as of Patrick explanation, the direct accessors should be used carefully, it could cause requirements leakage.
+- Patrick explanation, the direct accessors could cause requirements leakage.
 
 ---
 
@@ -439,6 +461,9 @@ const handler = () => Effect.gen(function* () {
 
 module.exports.handler = makeLambda(handler);
 </code></pre>
+notes:
+- baseLayer useful if client subclass must be used
+	- X-Ray subclass
 
 ---
 
@@ -467,6 +492,9 @@ module.exports.handler = makeLambda(handler);
 </code></pre>
 
 <img src="attachments/Screenshot 2025-02-16 at 19.19.32.png" style="position: absolute; top: 195px; left: 225px">
+
+notes:
+- the killer feature: typed errors
 
 ---
 
