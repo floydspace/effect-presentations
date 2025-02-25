@@ -437,31 +437,36 @@ notes:
 
 ---
 
-#### Graceful shutdown caveat
+##### Graceful shutdown caveat
 
 <ul>
   <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong></li>
   
   <img class="fragment" src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
+  <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 11.5%">
+    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 27.5%">
+    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 83.5%">
   <li class="fragment">
   The easiest way to enable it is using  <strong>LambdaInsightsExtension</strong>
   <img src="attachments/Screenshot 2025-02-25 at 18.53.10.png" alt="My Image" style="box-shadow: none; border: none;">
   </li>
 </ul>
+    <!-- <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 27.5%"> -->
 
 <div class="fragment" style="color: red">DEMO</div>
 
 notes:
-- lambda hit from outside
-- runtime constructed within INIT phase
+- extension is special lambda layer
 - only extension emits signals
+- lambda hit from outside
+- effect runtime constructed within INIT phase
 - demo
 
 ---
 
 <!-- .slide: data-auto-animate -->
 
-#### AWS Lambda Effect custom runtime
+##### AWS Lambda Effect custom runtime (Experimental!)
 
 <pre class="fragment" data-id="code-animation"><code data-trim data-line-numbers="1-8">
 import { type EffectHandler, makeLambda } from "@effect-aws/lambda";
@@ -474,11 +479,15 @@ const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) =>
 export const handler = makeLambda(effectHandler);
 </code></pre>
 
+notes:
+ - lets come back to the effect handler example
+ - what if I say that `makeLambda` is not needed anymore
+ - we can directly export the effectful handler
 
 ---
 <!-- .slide: data-auto-animate -->
 
-#### AWS Lambda Effect custom runtime
+##### AWS Lambda Effect custom runtime (Experimental!)
 
 <pre data-id="code-animation"><code data-trim data-line-numbers="1,5-6">
 import { type EffectHandler } from "@effect-aws/lambda";
@@ -490,6 +499,34 @@ export const handler: EffectHandler&lt;SNSEvent, never&gt; = (event) =>
 
 &nbsp;
 </code></pre>
+
+notes:
+  - we can directly export the effectful handler
+  - how it is possible?
+
+---
+<!-- .slide: data-auto-animate -->
+
+##### AWS Lambda Effect custom runtime (Experimental!)
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-6">
+import { type EffectHandler } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect } from "effect";
+
+export const handler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
+  Effect.logInfo("Processing event", event);
+</code></pre>
+
+  <img  src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
+
+  <img class="fragment" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 230px; left: 15.5%">
+
+  <img class="fragment" src="attachments/Screenshot 2025-02-26 at 00.07.29.png" alt="My Image" style="box-shadow: none; border: none;">
+
+notes:
+ - lets see the lambda lifecycle again
+ - we can actually construct effect global layer during runtime INIT phase
 
 ---
 
@@ -711,8 +748,9 @@ Future of **effect-aws**
 #### Links <!-- .element: class="fragment" data-fragment-index="1" -->
 
 <ul class="fragment" data-fragment-index="1">
-  <li><a href="https://github.com/floydspace/effect-aws">https://github.com/floydspace/effect-aws</a> - Effectful AWS Github</li>
-  <li><a href="https://floydspace.github.io/effect-aws">https://floydspace.github.io/effect-aws</a> - Effectful AWS Docs</li>
+  <li><a href="https://floydspace.github.io/effect-aws">floydspace.github.io/effect-aws</a> - Effectful AWS Docs</li>
+  <li><a href="https://github.com/floydspace/effect-aws">github.com/floydspace/effect-aws</a> - Effectful AWS Repo</li>
+  <li><a href="https://github.com/floydspace/aws-lambda-effect-runtime">github.com/floydspace/aws-lambda-effect-runtime</a> - AWS Lambda Effect Runtime Repo</li>
 </ul>
 
 note:
