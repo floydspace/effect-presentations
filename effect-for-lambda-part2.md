@@ -18,7 +18,7 @@ and other AWS services
 #### In this talk
 
 - Introduction and motivation
-- How does **@effect-aws/lambda** work
+- Running AWS lambda handler within Effect runtime
 - Effectful AWS SDK clients common implementation
 - Future of **effect-aws**
 
@@ -83,19 +83,16 @@ It actually applies not only yo effect-aws, but to the effect itself, bc it prov
 
 Classic lambda example
 
-<!-- [129-150|132-133|135-137|139|141-144|146|147|103-105|107-114|116-126|56-58|92-101|60-90|6-14|16-18|20-39|23-25|27-35|29|49-53] -->
-<pre data-id="code-animation"><code data-trim data-line-numbers="6-28|1,6-9|12|2-4,14-16|14,18-22|15,24|16,25|30|6-28">
+<pre data-id="code-animation"><code data-trim data-line-numbers="6-19|1,6-9|10|2-4,12-14|12,16|13,17|14,18|21|6-19">
 import type { Handler, SNSEvent } from "aws-lambda";
 import { SNSEventBus } from "./bus";
 import { YahooQuoteClient } from "./quoteClient";
 import { MongoDbInstrumentStore } from "./store";
 
-export const handler: Handler&lt;
+const handler: Handler&lt;
   SNSEvent,
   void
 &gt; = async (event) => {
-  console.info(`Received event: `, event);
-
   const { symbol } = JSON.parse(event.Records[0].Sns.Message);
 
   const client = new YahooQuoteClient();
@@ -103,19 +100,12 @@ export const handler: Handler&lt;
   const bus = new SNSEventBus();
 
   const quote = await client.lastPrice(symbol);
-
-  if (!quote) {
-    return console.error("No quote found");
-  }
-
   await store.updateQuote(symbol, quote);
   await bus.publish("quote_updated", { symbol, quote });
-
-  console.info(`Successfully processed event`);
 };
 
 module.exports.handler = handler;
-
+&nbsp;
 </code></pre>
 notes:
 - I want to start with **@effect-aws/lambda** package
@@ -126,22 +116,94 @@ notes:
 
 Effect lambda example
 
-<pre data-id="code-animation"><code data-trim data-line-numbers="8-32|1-2,8-13|16|4-6,18-20|18,22-26|19,28|20,29|40|34-38">
-import { EffectHandler, makeLambda } from "@effect-aws/lambda";
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,8-13">
+import { EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
-import { Console, Effect, Layer, Logger } from "effect";
-import { EventBus, SNSEventBusLive } from "./bus";
-import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
-import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
+import { Effect, Layer } from "effect";
+import { SNSEventBus } from "./bus";
+import { YahooQuoteClient } from "./quoteClient";
+import { MongoDbInstrumentStore } from "./store";
 
-export const effectHandler: EffectHandler&lt;
+const effectHandler: EffectHandler&lt;
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore,
+  never,
+  void
+&gt; = async (event) => {
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
+
+  const client = new YahooQuoteClient();
+  const store = await MongoDbInstrumentStore.init();
+  const bus = new SNSEventBus();
+
+  const quote = await client.lastPrice(symbol);
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
+};
+
+module.exports.handler = handler;
+&nbsp;
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Effect lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="8-13,23">
+import { EffectHandler } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect, Layer } from "effect";
+import { SNSEventBus } from "./bus";
+import { YahooQuoteClient } from "./quoteClient";
+import { MongoDbInstrumentStore } from "./store";
+
+const effectHandler: EffectHandler&lt;
   SNSEvent,
   EventBus | QuoteClient | InstrumentStore,
   never,
   void
 &gt; = (event) => Effect.gen(function* () {
-  yield* Console.info(`Received event: `, event);
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
 
+  const client = new YahooQuoteClient();
+  const store = await MongoDbInstrumentStore.init();
+  const bus = new SNSEventBus();
+
+  const quote = await client.lastPrice(symbol);
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
+}).pipe(Effect.orDie);
+
+module.exports.handler = handler;
+&nbsp;
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Effect lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="4-6,16-18|4-6,20-22|8-23">
+import { EffectHandler } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect, Layer } from "effect";
+import { EventBus, SNSEventBusLive } from "./bus";
+import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
+import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
+
+const effectHandler: EffectHandler&lt;
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore,
+  never,
+  void
+&gt; = (event) => Effect.gen(function* () {
   const { symbol } = JSON.parse(event.Records[0].Sns.Message);
 
   const client = yield* QuoteClient;
@@ -149,24 +211,93 @@ export const effectHandler: EffectHandler&lt;
   const bus = yield* EventBus;
 
   const quote = yield* client.lastPrice(symbol);
-
-  if (!quote) {
-    return yield* Console.error("No quote found");
-  }
-
   yield* store.updateQuote(symbol, quote);
   yield* bus.publish("quote_updated", { symbol, quote });
-
-  yield* Console.info(`Successfully processed event`);
 }).pipe(Effect.orDie);
 
-const LambdaLive = Layer.mergeAll(
-  SNSEventBusLive,
-  YahooQuoteClientLive,
-  MongoDbInstrumentStoreLive
-).pipe(Layer.provideMerge(Logger.json));
+module.exports.handler = handler;
+&nbsp;
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
 
-module.exports.handler = makeLambda(effectHandler, LambdaLive);
+---
+
+<!-- .slide: data-auto-animate -->
+
+Effect lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,25">
+import { EffectHandler, makeLambda } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect, Layer } from "effect";
+import { EventBus, SNSEventBusLive } from "./bus";
+import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
+import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
+
+const effectHandler: EffectHandler&lt;
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore,
+  never,
+  void
+&gt; = (event) => Effect.gen(function* () {
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
+
+  const client = yield* QuoteClient;
+  const store = yield* InstrumentStore;
+  const bus = yield* EventBus;
+
+  const quote = yield* client.lastPrice(symbol);
+  yield* store.updateQuote(symbol, quote);
+  yield* bus.publish("quote_updated", { symbol, quote });
+}).pipe(Effect.orDie);
+
+module.exports.handler = makeLambda(effectHandler);
+&nbsp; 
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Effect lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="25-32">
+import { EffectHandler, makeLambda } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect, Layer } from "effect";
+import { EventBus, SNSEventBusLive } from "./bus";
+import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
+import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
+
+const effectHandler: EffectHandler&lt;
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore,
+  never,
+  void
+&gt; = (event) => Effect.gen(function* () {
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
+
+  const client = yield* QuoteClient;
+  const store = yield* InstrumentStore;
+  const bus = yield* EventBus;
+
+  const quote = yield* client.lastPrice(symbol);
+  yield* store.updateQuote(symbol, quote);
+  yield* bus.publish("quote_updated", { symbol, quote });
+}).pipe(Effect.orDie);
+
+module.exports.handler = makeLambda({
+  handler: effectHandler,
+  layer: Layer.mergeAll(
+    SNSEventBusLive,
+    YahooQuoteClientLive,
+    MongoDbInstrumentStoreLive
+  ),
+});
+&nbsp;
 </code></pre>
 
 note:
@@ -186,7 +317,7 @@ type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
   callback: Callback&lt;A&gt;,
-) =&gt; void;
+) =&gt; void
 </code></pre>
 
 ---
@@ -201,7 +332,7 @@ type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
   callback: Callback&lt;A&gt;,
-) =&gt; void;
+) =&gt; void
 </code></pre>
 
 <pre data-id="code-animation2"><code data-trim class="language-ts">
@@ -209,7 +340,7 @@ type Handler&lt;T = unknown, A = any&gt; = (
 type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
-) =&gt; Promise&lt;A&gt;;
+) =&gt; Promise&lt;A&gt;
 </code></pre>
 
 ---
@@ -224,7 +355,7 @@ type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
   callback: Callback&lt;A&gt;,
-) =&gt; void;
+) =&gt; void
 </code></pre>
 
 <pre data-id="code-animation2"><code data-trim class="language-ts">
@@ -232,7 +363,7 @@ type Handler&lt;T = unknown, A = any&gt; = (
 type Handler&lt;T = unknown, A = any&gt; = (
   event: T,
   context: Context,
-) =&gt; Promise&lt;A&gt;;
+) =&gt; Promise&lt;A&gt;
 </code></pre>
 
 Effect Lambda handler
@@ -241,7 +372,7 @@ Effect Lambda handler
 type EffectHandler&lt;T, R, E = never, A = void&gt; = (
   event: T,
   context: Context,
-) =&gt; Effect.Effect&lt;A, E, R&gt;;
+) =&gt; Effect.Effect&lt;A, E, R&gt;
 </code></pre>
 notes:
 - I wish AWS natively work with Effect type
@@ -252,23 +383,31 @@ notes:
 
 Effect Lambda handler
 
-<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="7-19|8-9|11-13|21-40|22,39|16-17|29,36-37">
-// Effect way
+<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="11-27|12-14|1-4,13|6-9,14|16-22|17,21|18,22|29-45|30|30,35,41-42|30,44|22,25">
 type EffectHandler&lt;T, R, E = never, A = void&gt; = (
   event: T,
   context: Context,
 ) =&gt; Effect.Effect&lt;A, E, R&gt;;
 
+type EffectHandlerWithLayer&lt;T, R, E1 = never, E2 = never, A = void&gt; = {
+  handler: EffectHandler&lt;T, R, E1, A&gt;;
+  layer: Layer.Layer&lt;R, E2&gt;;
+};
+
 function makeLambda&lt;T, R, E1, E2, A&gt;(
-  handler: EffectHandler&lt;T, R, E1, A&gt;,
-  globalLayer?: Layer.Layer&lt;R, E2&gt;,
+  handlerOrOptions:
+    | EffectHandler&lt;T, R, E1, A&gt;
+    | EffectHandlerWithLayer&lt;T, R, E1, E2, A&gt;
 ): Handler&lt;T, A&gt; {
-  const globalRuntime = globalLayer
-    ? fromLayer(globalLayer)
-    : Promise.resolve(Runtime.defaultRuntime as Runtime.Runtime&lt;R&gt;);
+  const handler = Function.isFunction(handlerOrOptions)
+    ? handlerOrOptions
+    : handlerOrOptions.handler;
+
+  const runPromise = Function.isFunction(handlerOrOptions)
+    ? Effect.runPromise // default effect runner
+    : fromLayer(handlerOrOptions.layer).runPromise // managed runner
 
   return async (event: T, context: Context) =&gt; {
-    const runPromise = Runtime.runPromise(await globalRuntime);
     return handler(event, context).pipe(runPromise);
   };
 }
@@ -279,10 +418,7 @@ function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
   const signalHandler: NodeJS.SignalsListener = (signal) =&gt; {
     Effect.runFork(
       Effect.gen(function* () {
-        yield* Console.log(`[runtime] ${signal} received`);
-        yield* Console.log("[runtime] cleaning up");
         yield* rt.disposeEffect;
-        yield* Console.log("[runtime] exiting");
         yield* Effect.sync(() =&gt; process.exit(0));
       })
     );
@@ -291,7 +427,7 @@ function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
   process.on("SIGTERM", signalHandler);
   process.on("SIGINT", signalHandler);
 
-  return rt.runtime();
+  return rt;
 }
 </code></pre>
 notes:
@@ -301,22 +437,59 @@ notes:
 
 ---
 
-Graceful shutdown caveat
+#### Graceful shutdown caveat
 
 <ul>
   <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong></li>
-  <li class="fragment">Lambda environment lifecycle
-  <img src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;"></li>
-  <li class="fragment">The easiest way to enable it is using <strong>LambdaInsightsExtension</strong> lambda layer</li>
+  
+  <img class="fragment" src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
+  <li class="fragment">
+  The easiest way to enable it is using  <strong>LambdaInsightsExtension</strong>
+  <img src="attachments/Screenshot 2025-02-25 at 18.53.10.png" alt="My Image" style="box-shadow: none; border: none;">
+  </li>
 </ul>
 
-<div class="fragment" style="margin-top: 50px">DEMO</div>
+<div class="fragment" style="color: red">DEMO</div>
 
 notes:
 - lambda hit from outside
 - runtime constructed within INIT phase
 - only extension emits signals
 - demo
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+#### AWS Lambda Effect custom runtime
+
+<pre class="fragment" data-id="code-animation"><code data-trim data-line-numbers="1-8">
+import { type EffectHandler, makeLambda } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect } from "effect";
+
+const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
+  Effect.logInfo("Processing event", event);
+
+export const handler = makeLambda(effectHandler);
+</code></pre>
+
+
+---
+<!-- .slide: data-auto-animate -->
+
+#### AWS Lambda Effect custom runtime
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-6">
+import { type EffectHandler } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect } from "effect";
+
+export const handler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
+  Effect.logInfo("Processing event", event);
+
+&nbsp;
+</code></pre>
 
 ---
 
