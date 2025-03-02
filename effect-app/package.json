@@ -7,16 +7,16 @@
     "deploy": "serverless deploy",
     "invoke": "sam remote invoke --stack-name demo-effect-app-dev --region eu-west-1 --event-file event.json",
     "logs": "sam logs --stack-name demo-effect-app-dev --region eu-west-1",
-    "logs:watch": "logs --tail"
+    "logs:watch": "pnpm logs --tail"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "sideEffects": [],
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.724.0",
-    "@aws-sdk/client-sns": "^3.723.0",
-    "@aws-sdk/util-dynamodb": "^3.724.0",
+    "@aws-sdk/client-dynamodb": "^3.758.0",
+    "@aws-sdk/client-sns": "^3.758.0",
+    "@aws-sdk/util-dynamodb": "^3.758.0",
     "@effect-aws/client-dynamodb": "^1.9.0",
     "@effect-aws/client-sns": "^1.9.0",
     "@effect-aws/lambda": "^1.3.1",
@@ -30,7 +30,7 @@
     "@fluffy-spoon/substitute": "^1.208.0",
     "@types/aws-lambda": "^8.10.131",
     "esbuild": "^0.21.5",
-    "serverless": "^3.40.0",
+    "osls": "^3.47.0",
     "serverless-esbuild": "^1.54.6"
   }
 }

@@ -54,7 +54,7 @@ describe("MongoDbLayer", () => {
     console.log("start the program...");
 
     const result = await MongoDbService.pipe(
-      Runtime.runPromiseExit(await fromLayer(TestLayer))
+      fromLayer(TestLayer).runPromiseExit
     );
 
     console.log("end the program...");
@@ -62,7 +62,7 @@ describe("MongoDbLayer", () => {
     process.emit("SIGTERM");
 
     expect(Exit.isSuccess(result)).toBeTruthy();
-    expect((result as Exit.Success<Db, never>).value).toBe(DbSub);
+    expect((result as Exit.Success<Db, unknown>).value).toBe(DbSub);
 
     expect(mockConnect).toHaveBeenCalledTimes(1);
     expect(mockConnect).toHaveBeenCalledWith(
