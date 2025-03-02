@@ -383,7 +383,7 @@ notes:
 
 Effect Lambda handler
 
-<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="11-27|12-14|1-4,13|6-9,14|16-22|17,21|18,22|29-45|30|30,35,41-42|30,44|22,25">
+<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="11-27|12-14|1-4,13|6-9,14|16-20|22|22,29-45|30|30,35,41-42|30,44|22,25">
 type EffectHandler&lt;T, R, E = never, A = void&gt; = (
   event: T,
   context: Context,
@@ -395,20 +395,20 @@ type EffectHandlerWithLayer&lt;T, R, E1 = never, E2 = never, A = void&gt; = {
 };
 
 function makeLambda&lt;T, R, E1, E2, A&gt;(
-  handlerOrOptions:
+  handler:
     | EffectHandler&lt;T, R, E1, A&gt;
     | EffectHandlerWithLayer&lt;T, R, E1, E2, A&gt;
 ): Handler&lt;T, A&gt; {
-  const handler = Function.isFunction(handlerOrOptions)
-    ? handlerOrOptions
-    : handlerOrOptions.handler;
+  if (Function.isFunction(handler)) {
+    return (event: T, context: Context) =&gt; {
+      return handler(event, context).pipe(Effect.runPromise);
+    };
+  }
 
-  const runPromise = Function.isFunction(handlerOrOptions)
-    ? Effect.runPromise // default effect runner
-    : fromLayer(handlerOrOptions.layer).runPromise // managed runner
+  const Runtime = fromLayer(handler.layer);
 
-  return async (event: T, context: Context) =&gt; {
-    return handler(event, context).pipe(runPromise);
+  return (event: T, context: Context) =&gt; {
+    return handler.handler(event, context).pipe(Runtime.runPromise);
   };
 }
 
@@ -440,7 +440,7 @@ notes:
 ##### Graceful shutdown caveat
 
 <ul>
-  <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong></li>
+  <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong> (not enabled by default)</li>
   
   <img class="fragment" src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
   <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 11.5%">
@@ -494,7 +494,7 @@ import { type EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect } from "effect";
 
-export const handler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
+export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
   Effect.logInfo("Processing event", event);
 
 &nbsp;
@@ -514,7 +514,7 @@ import { type EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect } from "effect";
 
-export const handler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
+export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
   Effect.logInfo("Processing event", event);
 </code></pre>
 
@@ -715,7 +715,8 @@ Future of **effect-aws**
   <li class="fragment">Implement X-Ray tracing to support Effect spans</li>
   <li class="fragment">Port <a href="https://docs.powertools.aws.dev/lambda/typescript/latest/">AWS Powertools for Lambda</a> to Effect</li>
   <li class="fragment">Middlewares for <strong>@effect-aws/lambda</strong> (<a href="https://middy.js.org">Middy</a> inspiration)</li>
-  <li class="fragment">Http Api lambda builder</li>
+  <li class="fragment">Lambda context tag</li>
+  <li class="fragment">Integration with HttpApiBuilder</li>
 </ul>
 <div class="fragment" style="display: flex; margin-top: 50px">
 <iframe src="https://ghbtns.com/github-btn.html?user=floydspace&repo=effect-aws&type=star&count=true&size=large" frameborder="0" scrolling="0" width="150" height="30" title="GitHub"></iframe>
@@ -728,7 +729,9 @@ Future of **effect-aws**
 </div>
 %% <iframe class="fragment" src="https://github.com/sponsors/floydspace/button" title="Sponsor floydspace" height="32" width="120" style="border: 0; border-radius: 6px; margin-top: 30px"></iframe> %%
 
-
+notes:
+  - add context tag to have an option to inject context in any part of the program
+  - integrate with http api builder, in the way that Effectful handler can be used as HttpApi implementation
 
 
 ---
