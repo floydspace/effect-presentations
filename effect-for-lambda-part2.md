@@ -468,13 +468,14 @@ notes:
 
 ##### AWS Lambda Effect custom runtime (Experimental!)
 
-<pre class="fragment" data-id="code-animation"><code data-trim data-line-numbers="1-8">
+<pre class="fragment" data-id="code-animation"><code data-trim data-line-numbers="1-9">
 import { type EffectHandler, makeLambda } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect } from "effect";
 
-const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
-  Effect.logInfo("Processing event", event);
+const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => {
+  return Effect.logInfo("Processing event", event);
+};
 
 export const handler = makeLambda(effectHandler);
 </code></pre>
@@ -489,13 +490,14 @@ notes:
 
 ##### AWS Lambda Effect custom runtime (Experimental!)
 
-<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-6">
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-7">
 import { type EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect } from "effect";
 
-export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
-  Effect.logInfo("Processing event", event);
+export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => {
+  return Effect.logInfo("Processing event", event);
+};
 
 &nbsp;
 </code></pre>
@@ -507,20 +509,27 @@ notes:
 ---
 <!-- .slide: data-auto-animate -->
 
+<style>
+	.reveal .slides section .fragment.fade-left {
+		transform: translate(85px, 0);
+	}
+</style>
+
 ##### AWS Lambda Effect custom runtime (Experimental!)
 
-<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-6">
+<pre data-id="code-animation"><code data-trim data-line-numbers="1,5-7">
 import { type EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect } from "effect";
 
-export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => 
-  Effect.logInfo("Processing event", event);
+export const effectHandler: EffectHandler&lt;SNSEvent, never&gt; = (event) => {
+  return Effect.logInfo("Processing event", event);
+};
 </code></pre>
 
   <img  src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
 
-  <img class="fragment" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 230px; left: 15.5%">
+  <img class="fragment fade-left" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 240px; left: 15.5%; opacity: 1; visibility: visible;">
 
   <img class="fragment" src="attachments/Screenshot 2025-02-26 at 00.07.29.png" alt="My Image" style="box-shadow: none; border: none;">
 
