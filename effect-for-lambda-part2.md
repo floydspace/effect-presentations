@@ -53,12 +53,14 @@ notes:
 - based in rotterdam
 - english, presenter, bare with me
 
+%%
 ---
 <!-- slide bg="[[icebreaker.jpg]]" data-background-opacity="0.5" -->
 #### How many of you work with AWS?
 
 notes:
 - how important it is
+%%
 
 ---
 <!-- slide bg="[[motivation.jpg]]" data-background-opacity="0.8" data-background-size="50% 100%" data-background-position="right center" -->
@@ -84,6 +86,112 @@ It actually applies not only yo effect-aws, but to the effect itself, bc it prov
 Classic lambda example
 
 <pre data-id="code-animation"><code data-trim data-line-numbers="6-19|1,6-9|10|2-4,12-14|12,16|13,17|14,18|21|6-19">
+import type { Handler, SNSEvent } from "aws-lambda";
+import { SNSEventBus } from "./bus";
+import { YahooQuoteClient } from "./quoteClient";
+import { MongoDbInstrumentStore } from "./store";
+
+const handler: Handler&lt;
+  SNSEvent,
+  void
+&gt; = async (event) => {
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
+
+  const client = new YahooQuoteClient();
+  const store = await MongoDbInstrumentStore.init();
+  const bus = new SNSEventBus();
+
+  const quote = await client.lastPrice(symbol);
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
+};
+
+module.exports.handler = handler;
+&nbsp;
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
+
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Lambda handler
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void
+</code></pre>
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Lambda handler
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void
+</code></pre>
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Promise way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Promise&lt;A&gt;
+</code></pre>
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Lambda handler
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Callback way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+  callback: Callback&lt;A&gt;,
+) =&gt; void
+</code></pre>
+
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Promise way
+type Handler&lt;T = unknown, A = any&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Promise&lt;A&gt;
+</code></pre>
+
+Effect Lambda handler
+<pre data-id="code-animation2"><code data-trim class="language-ts">
+// Effect way
+type EffectHandler&lt;T, R, E = never, A = void&gt; = (
+  event: T,
+  context: Context,
+) =&gt; Effect.Effect&lt;A, E, R&gt;
+</code></pre>
+notes:
+- I wish AWS natively work with Effect type
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Classic lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="6-19">
 import type { Handler, SNSEvent } from "aws-lambda";
 import { SNSEventBus } from "./bus";
 import { YahooQuoteClient } from "./quoteClient";
@@ -190,7 +298,44 @@ notes:
 
 Effect lambda example
 
-<pre data-id="code-animation"><code data-trim data-line-numbers="4-6,16-18|4-6,20-22|8-23">
+<pre data-id="code-animation"><code data-trim data-line-numbers="4-6,16-18">
+import { EffectHandler } from "@effect-aws/lambda";
+import type { SNSEvent } from "aws-lambda";
+import { Effect, Layer } from "effect";
+import { EventBus, SNSEventBusLive } from "./bus";
+import { QuoteClient, YahooQuoteClientLive } from "./quoteClient";
+import { InstrumentStore, MongoDbInstrumentStoreLive } from "./store";
+
+const effectHandler: EffectHandler&lt;
+  SNSEvent,
+  EventBus | QuoteClient | InstrumentStore,
+  never,
+  void
+&gt; = (event) => Effect.gen(function* () {
+  const { symbol } = JSON.parse(event.Records[0].Sns.Message);
+
+  const client = yield* QuoteClient;
+  const store = yield* InstrumentStore;
+  const bus = yield* EventBus;
+
+  const quote = await client.lastPrice(symbol);
+  await store.updateQuote(symbol, quote);
+  await bus.publish("quote_updated", { symbol, quote });
+}).pipe(Effect.orDie);
+
+module.exports.handler = handler;
+&nbsp;
+</code></pre>
+notes:
+- I want to start with **@effect-aws/lambda** package
+
+---
+
+<!-- .slide: data-auto-animate -->
+
+Effect lambda example
+
+<pre data-id="code-animation"><code data-trim data-line-numbers="4-6,20-22|8-23">
 import { EffectHandler } from "@effect-aws/lambda";
 import type { SNSEvent } from "aws-lambda";
 import { Effect, Layer } from "effect";
@@ -252,7 +397,7 @@ const effectHandler: EffectHandler&lt;
   yield* bus.publish("quote_updated", { symbol, quote });
 }).pipe(Effect.orDie);
 
-module.exports.handler = makeLambda(effectHandler);
+module.exports.handler = makeLambda(effectHandler); // adapter
 &nbsp; 
 </code></pre>
 notes:
@@ -289,9 +434,9 @@ const effectHandler: EffectHandler&lt;
   yield* bus.publish("quote_updated", { symbol, quote });
 }).pipe(Effect.orDie);
 
-module.exports.handler = makeLambda({
+module.exports.handler = makeLambda({ // adapter
   handler: effectHandler,
-  layer: Layer.mergeAll(
+  layer: Layer.mergeAll( // global layer
     SNSEventBusLive,
     YahooQuoteClientLive,
     MongoDbInstrumentStoreLive
@@ -307,153 +452,24 @@ note:
 
 ---
 
-<!-- .slide: data-auto-animate -->
-
-Lambda handler
-
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Callback way
-type Handler&lt;T = unknown, A = any&gt; = (
-  event: T,
-  context: Context,
-  callback: Callback&lt;A&gt;,
-) =&gt; void
-</code></pre>
-
----
-
-<!-- .slide: data-auto-animate -->
-
-Lambda handler
-
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Callback way
-type Handler&lt;T = unknown, A = any&gt; = (
-  event: T,
-  context: Context,
-  callback: Callback&lt;A&gt;,
-) =&gt; void
-</code></pre>
-
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Promise way
-type Handler&lt;T = unknown, A = any&gt; = (
-  event: T,
-  context: Context,
-) =&gt; Promise&lt;A&gt;
-</code></pre>
-
----
-
-<!-- .slide: data-auto-animate -->
-
-Lambda handler
-
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Callback way
-type Handler&lt;T = unknown, A = any&gt; = (
-  event: T,
-  context: Context,
-  callback: Callback&lt;A&gt;,
-) =&gt; void
-</code></pre>
-
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Promise way
-type Handler&lt;T = unknown, A = any&gt; = (
-  event: T,
-  context: Context,
-) =&gt; Promise&lt;A&gt;
-</code></pre>
-
-Effect Lambda handler
-<pre data-id="code-animation2"><code data-trim class="language-ts">
-// Effect way
-type EffectHandler&lt;T, R, E = never, A = void&gt; = (
-  event: T,
-  context: Context,
-) =&gt; Effect.Effect&lt;A, E, R&gt;
-</code></pre>
-notes:
-- I wish AWS natively work with Effect type
-
----
-
-<!-- .slide: data-auto-animate -->
-
-Effect Lambda handler
-
-<pre data-id="code-animation2"><code class="language-typescript" data-trim data-line-numbers="11-27|12-14|1-4,13|6-9,14|16-20|22|22,29-45|30|30,35,41-42|30,44|22,25">
-type EffectHandler&lt;T, R, E = never, A = void&gt; = (
-  event: T,
-  context: Context,
-) =&gt; Effect.Effect&lt;A, E, R&gt;;
-
-type EffectHandlerWithLayer&lt;T, R, E1 = never, E2 = never, A = void&gt; = {
-  handler: EffectHandler&lt;T, R, E1, A&gt;;
-  layer: Layer.Layer&lt;R, E2&gt;;
-};
-
-function makeLambda&lt;T, R, E1, E2, A&gt;(
-  handler:
-    | EffectHandler&lt;T, R, E1, A&gt;
-    | EffectHandlerWithLayer&lt;T, R, E1, E2, A&gt;
-): Handler&lt;T, A&gt; {
-  if (Function.isFunction(handler)) {
-    return (event: T, context: Context) =&gt; {
-      return handler(event, context).pipe(Effect.runPromise);
-    };
-  }
-
-  const Runtime = fromLayer(handler.layer);
-
-  return (event: T, context: Context) =&gt; {
-    return handler.handler(event, context).pipe(Runtime.runPromise);
-  };
-}
-
-function fromLayer&lt;R, E&gt;(layer: Layer.Layer&lt;R, E&gt;) {
-  const rt = ManagedRuntime.make(layer);
-
-  const signalHandler: NodeJS.SignalsListener = (signal) =&gt; {
-    Effect.runFork(
-      Effect.gen(function* () {
-        yield* rt.disposeEffect;
-        yield* Effect.sync(() =&gt; process.exit(0));
-      })
-    );
-  };
-
-  process.on("SIGTERM", signalHandler);
-  process.on("SIGINT", signalHandler);
-
-  return rt;
-}
-</code></pre>
-notes:
-- convert global layer to global runtime
-- run handler within global runtime
-- listen to shutdown signals  to dispose
-
----
-
 ##### Graceful shutdown caveat
 
 <ul>
   <li class="fragment">Lambda supports <strong>graceful shutdown</strong> only for functions with <strong>registered extensions</strong> (not enabled by default)</li>
   
-  <img class="fragment" src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;">
-  <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 11.5%">
-    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 27.5%">
-    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 83.5%">
+  <li class="fragment">Lambda environment lifecycle
+  <img src="https://docs.aws.amazon.com/images/lambda/latest/dg/images/Overview-Successful-Invokes.png" alt="My Image" style="box-shadow: none; border: none;"></li>
+  <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 180px; left: 11.5%">
+    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 180px; left: 27.5%">
+    <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 180px; left: 83.5%">
   <li class="fragment">
   The easiest way to enable it is using  <strong>LambdaInsightsExtension</strong>
   <img src="attachments/Screenshot 2025-02-25 at 18.53.10.png" alt="My Image" style="box-shadow: none; border: none;">
   </li>
 </ul>
-    <!-- <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 140px; left: 27.5%"> -->
+    <!-- <img class="fragment fade-in-then-out" src="attachments/arrowdown.png" alt="My Image" style="width:70px; box-shadow: none; border: none; position: absolute; top: 180px; left: 27.5%"> -->
 
-<div class="fragment" style="color: red">DEMO</div>
+%% <div class="fragment" style="color: red">DEMO</div> %%
 
 notes:
 - extension is special lambda layer
