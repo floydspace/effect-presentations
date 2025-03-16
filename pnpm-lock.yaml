@@ -74,6 +74,9 @@ importers:
       '@effect-aws/lib-dynamodb':
         specifier: ^1.9.3
         version: 1.9.3(@effect-aws/client-dynamodb@1.9.3(effect@3.12.10))(effect@3.12.10)
+      '@effect-aws/powertools-logger':
+        specifier: ^1.5.0
+        version: 1.5.0(@aws-lambda-powertools/logger@2.16.0)(effect@3.12.10)
       '@effect/platform':
         specifier: ^0.75.4
         version: 0.75.4(effect@3.12.10)
@@ -199,6 +202,17 @@ packages:
 
   '@aws-crypto/util@5.2.0':
     resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
+
+  '@aws-lambda-powertools/commons@2.16.0':
+    resolution: {integrity: sha512-HtVibLx8yCHvfRhOwI85ghJJqF3pYr49rZP+kRyath0ZnIEWfklFmv9ehcohPzlIgaiOijKV4vyGCKiXBOnigw==}
+
+  '@aws-lambda-powertools/logger@2.16.0':
+    resolution: {integrity: sha512-k7Xpjx1VAd/52p3Wssq83OwUFOeus6Mx9JnsXBAdAA/aUON7srbv2pPRFMGuoK9Qv5nYvADaBcL9hYtK/XknaA==}
+    peerDependencies:
+      '@middy/core': 4.x || 5.x || 6.x
+    peerDependenciesMeta:
+      '@middy/core':
+        optional: true
 
   '@aws-sdk/client-api-gateway@3.758.0':
     resolution: {integrity: sha512-ekFj8Bi29KcHgFfyaJCQHtmELn39cekVmVSewiAQJdXgY/6MRBozJJLb56zY2LrBoBPzaWTE39ZmxJp/5pmL4Q==}
@@ -410,6 +424,12 @@ packages:
     resolution: {integrity: sha512-foEZTXZEAA3+3o6M0myCcUVMmuk7i91tu5D4T8pTyFNNRLrDlVkYK54JuydY9hF/LQpiZf4VzTobLrxvBoBbXw==}
     peerDependencies:
       '@effect-aws/client-dynamodb': ^1.9.3
+      effect: '>=3.0.4 <4.0.0'
+
+  '@effect-aws/powertools-logger@1.5.0':
+    resolution: {integrity: sha512-OyOx1T3y9o3DdDufhO6yDrpDF3etxHeWMGO3f7l0+xBeFHbi1NnI3URz7fWTfYCggaz4d/AEqhoUPqrVIWCuaA==}
+    peerDependencies:
+      '@aws-lambda-powertools/logger': '>=2.0.0'
       effect: '>=3.0.4 <4.0.0'
 
   '@effect/platform-node-shared@0.15.5':
@@ -2384,6 +2404,9 @@ packages:
   lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
 
+  lodash.merge@4.6.2:
+    resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
   lodash.union@4.6.0:
     resolution: {integrity: sha512-c4pB2CdGrGdjMKYLA+XiRDO7Y0PRQbm/Gzg8qMj+QH+pFVAoTp5sBpO0odL3FjoPCGjK96p6qsP+yQoiLoOBcw==}
 
@@ -3688,6 +3711,13 @@ snapshots:
       '@smithy/util-utf8': 2.1.1
       tslib: 2.6.2
 
+  '@aws-lambda-powertools/commons@2.16.0': {}
+
+  '@aws-lambda-powertools/logger@2.16.0':
+    dependencies:
+      '@aws-lambda-powertools/commons': 2.16.0
+      lodash.merge: 4.6.2
+
   '@aws-sdk/client-api-gateway@3.758.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
@@ -4494,6 +4524,11 @@ snapshots:
       effect: 3.12.10
     transitivePeerDependencies:
       - aws-crt
+
+  '@effect-aws/powertools-logger@1.5.0(@aws-lambda-powertools/logger@2.16.0)(effect@3.12.10)':
+    dependencies:
+      '@aws-lambda-powertools/logger': 2.16.0
+      effect: 3.12.10
 
   '@effect/platform-node-shared@0.15.5(@effect/platform@0.65.5(@effect/schema@0.73.4(effect@3.12.10))(effect@3.12.10))(effect@3.12.10)':
     dependencies:
@@ -6624,6 +6659,8 @@ snapshots:
   lodash.flatten@4.4.0: {}
 
   lodash.isplainobject@4.0.6: {}
+
+  lodash.merge@4.6.2: {}
 
   lodash.union@4.6.0: {}
 
