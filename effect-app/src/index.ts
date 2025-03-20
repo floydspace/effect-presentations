@@ -1,4 +1,3 @@
-import { makeLambda } from "@effect-aws/lambda";
 import { Logger } from "@effect-aws/powertools-logger";
 import { Layer } from "effect";
 import { SNSEventBusLive } from "./bus";
@@ -12,7 +11,7 @@ const LambdaLive = Layer.mergeAll(
   MongoDbInstrumentStoreLive
 ).pipe(Layer.provideMerge(Logger.layer({ serviceName: "effect-app" })));
 
-module.exports.handler = makeLambda({
+module.exports.handler = {
   handler: effectHandler,
   layer: LambdaLive,
-});
+};
