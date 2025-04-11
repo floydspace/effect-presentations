@@ -35,7 +35,7 @@ export class MongoDbService extends Effect.Service<MongoDbService>()(
     scoped: Effect.gen(function* () {
       const mongodbUrl = yield* Config.string("MONGODB_URL");
       return yield* mongoDbImpl(mongodbUrl);
-    }),
+    }).pipe(Effect.withSpan("MongoDbService.connection")),
   }
 ) {}
 
@@ -51,6 +51,7 @@ export const MongoDbInstrumentStoreLive = Layer.effect(
             .collection<{ _id: string }>("instruments")
             .updateOne({ _id }, { $set: { quote } }, { upsert: true })
         ),
+        Effect.withSpan("MongoDbInstrumentStoreLive.updateQuote"),
         Effect.asVoid
       );
 

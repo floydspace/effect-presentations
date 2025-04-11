@@ -37,7 +37,8 @@ export const YahooQuoteClientLive = Layer.effect(
             new FetchError({
               message: `Failed to fetch ${e.methodAndUrl}. Reason: ${e.message}`,
             })
-        )
+        ),
+        Effect.withSpan("YahooQuoteClientLive.lastPrice")
       );
 
     return QuoteClient.of({ lastPrice });

@@ -31,4 +31,4 @@ export const effectHandler: EffectHandler<
     yield* bus.publish("quote_updated", { symbol, quote });
 
     yield* Effect.logInfo(`Successfully processed event`);
-  }).pipe(Effect.orDie);
+  }).pipe(Effect.orDie, Effect.withSpan("EffectHandler"));

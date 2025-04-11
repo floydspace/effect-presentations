@@ -25,6 +25,7 @@ export const SNSEventBusLive = Layer.effect(
           },
         })
         .pipe(
+          Effect.withSpan("SNS.publish"),
           Effect.catchAll((e) => new Cause.UnknownException(e)),
           Effect.asVoid
         );
