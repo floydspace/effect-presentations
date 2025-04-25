@@ -1,5 +1,4 @@
 import {
-  FetchHttpClient,
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
@@ -43,4 +42,4 @@ export const YahooQuoteClientLive = Layer.effect(
 
     return QuoteClient.of({ lastPrice });
   })
-).pipe(Layer.provide(FetchHttpClient.layer));
+);

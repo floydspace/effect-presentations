@@ -1,4 +1,5 @@
 import { SNS } from "@effect-aws/client-sns";
+import { HttpHandler } from "@effect-aws/http-handler";
 import { Cause, Config, Effect, Layer } from "effect";
 import { EventBus } from "./abstract";
 
@@ -35,4 +36,7 @@ export const SNSEventBusLive = Layer.effect(
         sendMessage("fanout", from, "subscriber", payload),
     });
   })
-).pipe(Layer.provide(SNS.layer({ logger: true })));
+).pipe(
+  Layer.provide(SNS.layer({ logger: true })),
+  Layer.provide(HttpHandler.layer())
+);

@@ -11,9 +11,9 @@
   "license": "ISC",
   "sideEffects": [],
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.724.0",
-    "@aws-sdk/client-sns": "^3.723.0",
-    "@aws-sdk/util-dynamodb": "^3.724.0",
+    "@aws-sdk/client-dynamodb": "^3.796.0",
+    "@aws-sdk/client-sns": "^3.796.0",
+    "@aws-sdk/util-dynamodb": "^3.796.0",
     "mongodb": "^6.3.0",
     "zod": "^3.22.4"
   },

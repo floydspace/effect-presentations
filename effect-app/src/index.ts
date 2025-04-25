@@ -1,6 +1,7 @@
 import { makeLambda } from "@effect-aws/lambda";
 import { Logger } from "@effect-aws/powertools-logger";
 import { Tracer } from "@effect-aws/powertools-tracer";
+import { FetchHttpClient } from "@effect/platform";
 import { Layer } from "effect";
 import { SNSEventBusLive } from "./bus";
 import { effectHandler } from "./lambda";
@@ -16,7 +17,10 @@ const LambdaLive = Layer.mergeAll(
   SNSEventBusLive,
   YahooQuoteClientLive,
   MongoDbInstrumentStoreLive
-).pipe(Layer.provideMerge(PowerToolsLive));
+).pipe(
+  Layer.provide(FetchHttpClient.layer),
+  Layer.provideMerge(PowerToolsLive)
+);
 
 module.exports.handler = makeLambda({
   handler: effectHandler,
