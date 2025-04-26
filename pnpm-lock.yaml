@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  bson@6.2.0:
-    hash: l254pfxajtxvkdqi43yekn262m
-    path: patches/bson@6.2.0.patch
+  bson:
+    hash: 3q77uolnqlnelskj546w3lb6s4
+    path: patches/bson.patch
 
 importers:
 
@@ -32,8 +32,8 @@ importers:
         specifier: ^3.796.0
         version: 3.796.0(@aws-sdk/client-dynamodb@3.796.0)
       mongodb:
-        specifier: ^6.3.0
-        version: 6.3.0
+        specifier: ^6.16.0
+        version: 6.16.0
       zod:
         specifier: ^3.22.4
         version: 3.22.4
@@ -99,8 +99,8 @@ importers:
         specifier: ^3.14.14
         version: 3.14.14
       mongodb:
-        specifier: ^6.3.0
-        version: 6.3.0
+        specifier: ^6.16.0
+        version: 6.16.0
     devDependencies:
       '@fluffy-spoon/substitute':
         specifier: ^1.208.0
@@ -794,8 +794,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.22':
     resolution: {integrity: sha512-Wf963MzWtA2sjrNt+g18IAln9lKnlRp+K2eH4jjIoF1wYeq3aMREpG09xhlhdzS0EjwU7qmUJYangWa+151vZw==}
 
-  '@mongodb-js/saslprep@1.1.4':
-    resolution: {integrity: sha512-8zJ8N1x51xo9hwPh6AWnKdLGEC5N3lDa6kms1YHmFBoRhTpJR6HG8wWk0td1MVCu9cD4YBrvjZEtd5Obw0Fbnw==}
+  '@mongodb-js/saslprep@1.2.2':
+    resolution: {integrity: sha512-EB0O3SCSNRUFk66iRCpI+cXzIjdswfCs7F6nOC3RAGJ7xr5YhaicvsRwJ9eyzYvYRlCSDUO/c7g4yNulxKC1WA==}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -1514,8 +1514,8 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
-  bson@6.2.0:
-    resolution: {integrity: sha512-ID1cI+7bazPDyL9wYy9GaQ8gEEohWvcUl/Yf0dIdutJxnmInEEyCsb4awy/OiBfall7zBA179Pahi3vCdFze3Q==}
+  bson@6.10.3:
+    resolution: {integrity: sha512-MTxGsqgYTwfshYWTRdmZRC+M7FnG1b4y7RO7p2k3X24Wq0yv1m77Wsj0BzlPzd/IowgESfsruQCUToa7vbOpPQ==}
     engines: {node: '>=16.20.1'}
 
   buffer-alloc-unsafe@1.1.0:
@@ -2577,12 +2577,12 @@ packages:
   mongodb-connection-string-url@3.0.0:
     resolution: {integrity: sha512-t1Vf+m1I5hC2M5RJx/7AtxgABy1cZmIPQRMXw+gEIPn/cZNF3Oiy+l0UIypUwVB5trcWHq3crg2g3uAR9aAwsQ==}
 
-  mongodb@6.3.0:
-    resolution: {integrity: sha512-tt0KuGjGtLUhLoU263+xvQmPHEGTw5LbcNC73EoFRYgSHwZt5tsoJC110hDyO1kjQzpgNrpdcSza9PknWN4LrA==}
+  mongodb@6.16.0:
+    resolution: {integrity: sha512-D1PNcdT0y4Grhou5Zi/qgipZOYeWrhLEpk33n3nm6LGtz61jvO88WlrWCK/bigMjpnOdAUKKQwsGIl0NtWMyYw==}
     engines: {node: '>=16.20.1'}
     peerDependencies:
       '@aws-sdk/credential-providers': ^3.188.0
-      '@mongodb-js/zstd': ^1.1.0
+      '@mongodb-js/zstd': ^1.1.0 || ^2.0.0
       gcp-metadata: ^5.2.0
       kerberos: ^2.0.1
       mongodb-client-encryption: '>=6.0.0 <7'
@@ -4800,7 +4800,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  '@mongodb-js/saslprep@1.1.4':
+  '@mongodb-js/saslprep@1.2.2':
     dependencies:
       sparse-bitfield: 3.0.3
 
@@ -5650,7 +5650,7 @@ snapshots:
       node-releases: 2.0.14
       update-browserslist-db: 1.0.13(browserslist@4.22.2)
 
-  bson@6.2.0(patch_hash=l254pfxajtxvkdqi43yekn262m): {}
+  bson@6.10.3(patch_hash=3q77uolnqlnelskj546w3lb6s4): {}
 
   buffer-alloc-unsafe@1.1.0: {}
 
@@ -6808,10 +6808,10 @@ snapshots:
       '@types/whatwg-url': 11.0.4
       whatwg-url: 13.0.0
 
-  mongodb@6.3.0:
+  mongodb@6.16.0:
     dependencies:
-      '@mongodb-js/saslprep': 1.1.4
-      bson: 6.2.0(patch_hash=l254pfxajtxvkdqi43yekn262m)
+      '@mongodb-js/saslprep': 1.2.2
+      bson: 6.10.3(patch_hash=3q77uolnqlnelskj546w3lb6s4)
       mongodb-connection-string-url: 3.0.0
 
   mri@1.2.0: {}

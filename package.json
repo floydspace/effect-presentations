@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "pnpm": {
     "patchedDependencies": {
-      "bson@6.2.0": "patches/bson@6.2.0.patch"
+      "bson": "patches/bson.patch"
     }
   },
   "scripts": {
