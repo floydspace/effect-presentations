@@ -1,4 +1,4 @@
-import { makeLambda } from "@effect-aws/lambda";
+import { LambdaHandler } from "@effect-aws/lambda";
 import { Logger } from "@effect-aws/powertools-logger";
 import { Tracer } from "@effect-aws/powertools-tracer";
 import { FetchHttpClient } from "@effect/platform";
@@ -22,7 +22,7 @@ const LambdaLive = Layer.mergeAll(
   Layer.provideMerge(PowerToolsLive)
 );
 
-module.exports.handler = makeLambda({
+module.exports.handler = LambdaHandler.make({
   handler: effectHandler,
   layer: LambdaLive,
 });

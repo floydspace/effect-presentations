@@ -10,6 +10,7 @@ provider:
   runtime: nodejs22.x
   region: eu-west-1
   tracing:
+    apiGateway: true
     lambda: true
   iam:
     role:
@@ -30,6 +31,16 @@ custom:
     packager: pnpm
 
 functions:
+  api:
+    handler: src/apiLambda.handler
+    layers:
+      - arn:aws:lambda:eu-west-1:580247275435:layer:LambdaInsightsExtension:53
+    environment:
+      MONGODB_URL: mongodb+srv://cluster0.tlkgc.mongodb.net/demo?retryWrites=true&w=majority&authSource=%24external&authMechanism=MONGODB-AWS
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
   lambda:
     handler: src/index.handler
     layers:

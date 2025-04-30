@@ -78,8 +78,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(@effect-aws/commons@0.3.0(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14)
       '@effect-aws/lambda':
-        specifier: ^1.3.1
-        version: 1.3.1(effect@3.14.14)
+        specifier: ^1.4.1
+        version: 1.4.1(effect@3.14.14)
       '@effect-aws/lib-dynamodb':
         specifier: ^1.10.0
         version: 1.10.0(@effect-aws/client-dynamodb@1.10.0(effect@3.14.14))(effect@3.14.14)
@@ -436,8 +436,8 @@ packages:
       '@effect/platform': '>=0.69.25'
       effect: '>=3.0.4 <4.0.0'
 
-  '@effect-aws/lambda@1.3.1':
-    resolution: {integrity: sha512-fFVIY7YvU5xCo6ewAZAHJWkBjf3HC75GGbwkcFT7KGwQ8By+a3DJGrJT60QvoAAZUIjbpwCdCjeGA9kuFbGeVA==}
+  '@effect-aws/lambda@1.4.1':
+    resolution: {integrity: sha512-rfIwIOVqC5UJsE7xbd+rcqPfCBU8gwESyC11poCyoH4Kwi6HP/bUs+Sc31OrZvCXT/Qt5LxMJCxk6I1SEAQUKQ==}
     peerDependencies:
       effect: '>=3.0.4 <4.0.0'
 
@@ -4566,7 +4566,7 @@ snapshots:
       '@smithy/types': 4.2.0
       effect: 3.14.14
 
-  '@effect-aws/lambda@1.3.1(effect@3.14.14)':
+  '@effect-aws/lambda@1.4.1(effect@3.14.14)':
     dependencies:
       effect: 3.14.14
 

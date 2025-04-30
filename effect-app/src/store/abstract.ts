@@ -10,7 +10,16 @@ export class Quote extends Schema.Class<Quote>("Quote")({
 }) {}
 
 export interface InstrumentStore {
-  updateQuote: (
+  readonly getQuote: (
+    id: string
+  ) => Effect.Effect<
+    Quote,
+    | Cause.NoSuchElementException
+    | Cause.UnknownException
+    | ParseResult.ParseError
+  >;
+
+  readonly updateQuote: (
     id: string,
     quote: Quote
   ) => Effect.Effect<void, Cause.UnknownException | ParseResult.ParseError>;
