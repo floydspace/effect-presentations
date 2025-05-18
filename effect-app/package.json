@@ -7,7 +7,7 @@
     "deploy": "serverless deploy",
     "invoke": "sam remote invoke --stack-name demo-effect-app-dev LambdaLambdaFunction --region eu-west-1 --event-file event.json",
     "invoke:stream": "curl --request GET \"$(pnpm --silent lambda-url:stream)\" --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 'aws:amz:eu-west-1:lambda' -H \"x-amz-security-token: $AWS_SESSION_TOKEN\"",
-    "lambda-arn:stream": "aws cloudformation describe-stack-resource --stack-name demo-effect-app-dev --region eu-west-1 --logical-resource-id StreamFunctionUrl --query 'StackResourceDetail.PhysicalResourceId' --output text --no-cli-pager",
+    "lambda-arn:stream": "aws cloudformation describe-stack-resource --stack-name demo-effect-app-dev --region eu-west-1 --logical-resource-id StreamLambdaFunction --query 'StackResourceDetail.PhysicalResourceId' --output text --no-cli-pager",
     "lambda-url:stream": "aws lambda get-function-url-config --function-name \"$(pnpm --silent lambda-arn:stream)\" --region eu-west-1 --query 'FunctionUrl' --output text --no-cli-pager",
     "logs": "sam logs --stack-name demo-effect-app-dev --region eu-west-1",
     "logs:watch": "pnpm logs --tail"
